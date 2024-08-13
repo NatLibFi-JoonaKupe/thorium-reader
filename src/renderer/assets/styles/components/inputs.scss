@@ -65,7 +65,7 @@ input[type="search"]:not(.R2_CSS_CLASS__FORCE_NO_FOCUS_OUTLINE) {
 form[role="search"] {
   background-color: var(--color-annotations-bg);
   color: var(--color-primary);
-  width: 370px !important;
+  width: 300px !important;
   height: 30px !important;
 
   &:has(input:focus) {    
@@ -160,7 +160,7 @@ select {
 /* 6. dropzone */
 
 .dropzone {
-  position: absolute;
+  position: fixed;
   overflow: hidden;
   inset: 0;
 }

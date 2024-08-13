@@ -24,7 +24,7 @@ const DeleteOpdsFeedConfirm = (props: { feed: IOpdsFeedView, trigger: React.Reac
     const removeAction = React.useCallback(() => {
         dispatch(dialogActions.closeRequest.build());
         remove(props.feed.identifier);
-    }, [remove, props.feed.identifier]);
+    }, [dispatch, remove, props.feed.identifier]);
 
     return (
         <AlertDialog.Root {...props}>
@@ -32,7 +32,7 @@ const DeleteOpdsFeedConfirm = (props: { feed: IOpdsFeedView, trigger: React.Reac
                 {props.trigger}
             </AlertDialog.Trigger>
             <AlertDialog.Portal>
-                <div className={stylesAlertModals.AlertDialogOverlay}></div>
+                <AlertDialog.Overlay className={stylesAlertModals.AlertDialogOverlay}/>
                 <AlertDialog.Content className={stylesAlertModals.AlertDialogContent}>
                     <AlertDialog.Title className={stylesAlertModals.AlertDialogTitle}>{__("dialog.deleteFeed")}</AlertDialog.Title>
                     <AlertDialog.Description className={stylesAlertModals.AlertDialogDescription}>

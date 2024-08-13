@@ -42,15 +42,15 @@ const convertDrawTypeToNumber = (drawType: TDrawType) => {
 //     }
 // }
 
-// focus from annotation menu
-function* annotationFocus(action: readerLocalActionAnnotations.focus.TAction) {
-    debug(`annotationFocus -- action: [${JSON.stringify(action.payload, null, 4)}]`);
+// // focus from annotation menu
+// function* annotationFocus(action: readerLocalActionAnnotations.focus.TAction) {
+//     debug(`annotationFocus -- action: [${JSON.stringify(action.payload, null, 4)}]`);
 
-    // const { payload: { uuid } } = action;
+//     // const { payload: { uuid } } = action;
 
-    // const { currentFocusUuid } = yield* selectTyped((store: IReaderRootState) => store.annotationControlMode.focus);
-    // yield* put(readerLocalActionAnnotations.focusMode.build({previousFocusUuid: currentFocusUuid || "", currentFocusUuid: uuid, editionEnable: false}));
-}
+//     // const { currentFocusUuid } = yield* selectTyped((store: IReaderRootState) => store.annotationControlMode.focus);
+//     // yield* put(readerLocalActionAnnotations.focusMode.build({previousFocusUuid: currentFocusUuid || "", currentFocusUuid: uuid, editionEnable: false}));
+// }
 
 function* annotationUpdate(action: readerActions.annotation.update.TAction) {
     debug(`annotationUpdate-- handlerState: [${JSON.stringify(action.payload, null, 4)}]`);
@@ -103,7 +103,7 @@ function* createAnnotation(locatorExtended: LocatorExtended, color: IColor, comm
     }));
 
     // sure! close the popover
-    yield* put(readerLocalActionAnnotations.enableMode.build(false, ""));
+    yield* put(readerLocalActionAnnotations.enableMode.build(false, undefined));
 }
 
 function* newLocatorEditAndSaveTheNote(locatorExtended: LocatorExtended): SagaGenerator<void> {
@@ -118,7 +118,7 @@ function* newLocatorEditAndSaveTheNote(locatorExtended: LocatorExtended): SagaGe
     }
 
     // open popover to edit and save the note
-    yield* put(readerLocalActionAnnotations.enableMode.build(true, locatorExtended.selectionInfo.cleanText.slice(0, 200)));
+    yield* put(readerLocalActionAnnotations.enableMode.build(true, locatorExtended));
 
     // wait the action of the annotation popover, the user select the text, click on "take the note" button and then edit his note with the popover.
     // 2 choices: cancel (annotationModeEnabled = false) or takeNote with color and comment
@@ -200,7 +200,19 @@ function* readerStart() {
         take(winActions.initSuccess.build),
     ]);
 
-    debug("annotation iframe reader viewport is started and ready to annotate, we draws all the annoatation for the first time with 'highlightsDrawMargin' enabled");
+    // divina,
+    const { info, locator } = yield* selectTyped((state: IReaderRootState) => state.reader);
+    // typeof divina !== "undefined" ||
+    const skip = info?.publicationView?.isDivina ||
+        locator?.audioPlaybackInfo || info?.publicationView?.isAudio ||
+        info?.publicationView?.isPDF;
+    if (skip) {
+        // divina,
+        debug("readerStart SKIP annot", skip, info?.publicationView?.isDivina, locator?.audioPlaybackInfo, info?.publicationView?.isAudio, info?.publicationView?.isPDF);
+        return;
+    }
+
+    debug("annotation iframe reader viewport is started and ready to annotate, we draws all the annotation for the first time with 'highlightsDrawMargin' enabled");
 
     const { annotation_defaultDrawView } = yield* selectTyped((state: IReaderRootState) => state.reader.config);
     if (annotation_defaultDrawView === "margin") {
@@ -223,6 +235,19 @@ function* readerStart() {
 }
 
 function* captureHightlightDrawMargin(action: readerLocalActionSetConfig.TAction) {
+
+    // divina,
+    const { info, locator } = yield* selectTyped((state: IReaderRootState) => state.reader);
+    // typeof divina !== "undefined" ||
+    const skip = info?.publicationView?.isDivina ||
+        locator?.audioPlaybackInfo || info?.publicationView?.isAudio ||
+        info?.publicationView?.isPDF;
+    if (skip) {
+        // divina,
+        debug("captureHightlightDrawMargin SKIP annot", skip, info?.publicationView?.isDivina, locator?.audioPlaybackInfo, info?.publicationView?.isAudio, info?.publicationView?.isPDF);
+        return;
+    }
+
     const { annotation_defaultDrawView } = action.payload;
 
     debug(`captureHightlightDrawMargin : readerLocalActionSetConfig CHANGED apply=${annotation_defaultDrawView}`);
@@ -245,11 +270,11 @@ export const saga = () =>
             annotationUpdate,
             (e) => console.error("readerLocalActionAnnotations.update", e),
         ),
-        takeSpawnEvery(
-            readerLocalActionAnnotations.focus.ID,
-            annotationFocus,
-            (e) => console.error("readerLocalActionAnnotations.focus", e),
-        ),
+        // takeSpawnEvery(
+        //     readerLocalActionAnnotations.focus.ID,
+        //     annotationFocus,
+        //     (e) => console.error("readerLocalActionAnnotations.focus", e),
+        // ),
         takeSpawnEvery(
             readerActions.annotation.push.ID,
             annotationPush,

@@ -84,7 +84,7 @@
   } 
 
   .settings_container {
-    height: calc(100dvh - 230px);
+    height: calc(100dvh - 230px)!important;
     padding: 0;
     overflow: hidden auto;
 
@@ -109,7 +109,8 @@
     border-bottom: 1px solid var(--color-extralight-grey-alt);
 
     .my_combobox_container {
-      width: calc(100% - 10px);
+      width: 310px;
+      height: 30px;
 
       > button {
         width: 100%!important;
@@ -193,6 +194,7 @@
   padding: 10px;
   background-color: var(--color-docked-header);
   border-bottom: 1px solid var(--color-extralight-grey-alt);
+  height: 32px;
 
   .my_combobox_container button {
     min-width: 110px;
@@ -313,7 +315,7 @@
 .navigation_container {
   display: flex;
   align-items: end;
-  justify-content: end;
+  justify-content: center;
   gap: 10px;
   margin-bottom: 20px;
 
@@ -543,7 +545,7 @@
         overflow: hidden;
         max-width: 250px;
         white-space: nowrap;
-        line-height: 95%;
+        line-height: 97%;
         height: unset;
     }
 
@@ -575,15 +577,11 @@
     }
 
     button {
-      background-color: var(--color-blue);
-      color: var(--color-secondary);
-      width: fit-content;
-      border-radius: 6px;
-      display: flex;
-      flex-wrap: nowrap;
       padding: 3px 5px;
       text-wrap: nowrap;
       box-sizing: content-box;
+      height: 28px;
+      min-width: unset;
 
       svg {
         width: 15px;
@@ -649,6 +647,22 @@
 //   }
 // }
 
+.modal_dialog_reader .pages select, .popover_dialog_reader .pages select {
+  width: 160px;
+  height: 30px;
+  padding: 0!important;
+  // padding-left: 10px!important;
+  text-align: center;
+  border: 1px solid var(--color-dark-grey-alt);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-right: 0 !important;
+  background-color: inherit;
+  color: var(--color-primary);
+}
+
 .modal_dialog_reader, .popover_dialog_reader {
   .pages .react_aria_ComboBox .my_combobox_container {
     background-color: var(--color-secondary)!important;
@@ -678,4 +692,34 @@
 .react_aria_ComboBox [role="group"]:focus-within {
   outline: var(--color-blue) solid 2px !important;
   outline-offset: -2px;
+}
+
+.delete_item {
+  z-index: 1000;
+  border: 1px solid var(--color-blue);
+  background-color: var(--color-light-blue);
+  border-radius: 5px;
+  transition: 200ms;
+
+  button {
+    padding: 5px;
+    color: var(--color-blue);
+    height: unset;
+    border-radius: 5px;
+
+    &:hover {
+      background-color: var(--color-secondary);
+    }
+
+    &:focus {
+      background-color: var(--color-blue);
+      border: 1px solid var(--color-secondary);
+      outline: 1px solid var(--color-blue);
+      color: var(--color-secondary);
+    }
+
+    svg {
+      width: 10px;
+    }
+  }
 }

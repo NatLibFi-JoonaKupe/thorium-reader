@@ -44,14 +44,14 @@ const TabTitle = (props: React.PropsWithChildren<{ title: string }>) => {
 };
 
 const TabHeader = (props: React.PropsWithChildren<{ title: string }>) => {
-
+    const [__] = useTranslator();
     return (
         <div key="modal-header" className={stylesSettings.close_button_div}>
             <TabTitle title={props.title}>
                 {props.children}
             </TabTitle>
             <Dialog.Close asChild>
-                <button className={stylesButtons.button_transparency_icon} aria-label="Close" >
+                <button data-css-override="" className={stylesButtons.button_transparency_icon} aria-label={__("accessibility.closeDialog")} >
                     <SVG ariaHidden={true} svg={QuitIcon} />
                 </button>
             </Dialog.Close>
@@ -142,7 +142,7 @@ export const WizardModal = () => {
                         </div>
                     </Tabs.List>
                     <div className={classNames(stylesSettings.settings_content, stylesModals.guidedTour_content)} style={{ marginTop: "70px" }}>
-                        <Tabs.Content value="tab1" tabIndex={-1}>
+                        <Tabs.Content value="tab1" tabIndex={-1} className="R2_CSS_CLASS__FORCE_NO_FOCUS_OUTLINE">
                             <TabHeader title={""} />
                             <div className={classNames(stylesSettings.settings_tab, stylesModals.guidedTour_tab)}>
                                 <h3>{__("wizard.title.welcome")}</h3>
@@ -163,7 +163,7 @@ export const WizardModal = () => {
                                 </div>
                             </div>
                         </Tabs.Content>
-                        <Tabs.Content value="tab2" tabIndex={-1}>
+                        <Tabs.Content value="tab2" tabIndex={-1} className="R2_CSS_CLASS__FORCE_NO_FOCUS_OUTLINE">
                             <TabHeader title={""} />
                             <div className={classNames(stylesSettings.settings_tab, stylesModals.guidedTour_tab)}>
                                 <h3>{__("wizard.title.allBooks")}</h3>
@@ -181,7 +181,7 @@ export const WizardModal = () => {
                                 </div>
                             </div>
                         </Tabs.Content>
-                        <Tabs.Content value="tab3" tabIndex={-1}>
+                        <Tabs.Content value="tab3" tabIndex={-1} className="R2_CSS_CLASS__FORCE_NO_FOCUS_OUTLINE">
                             <TabHeader title={""} />
                             <div className={classNames(stylesSettings.settings_tab, stylesModals.guidedTour_tab)}>
                                 <h3>{__("wizard.tab.catalogs")}</h3>
@@ -199,12 +199,12 @@ export const WizardModal = () => {
                                 </div>
                             </div>
                         </Tabs.Content>
-                        <Tabs.Content value="tab4" tabIndex={-1}>
+                        <Tabs.Content value="tab4" tabIndex={-1} className="R2_CSS_CLASS__FORCE_NO_FOCUS_OUTLINE">
                             <TabHeader title={""} />
                             <div className={classNames(stylesSettings.settings_tab, stylesModals.guidedTour_tab)}>
                                 <h3>{__("wizard.tab.readingView")}</h3>
-                                <p>
-                                    {__("wizard.description.readingView1")}<br />{__("wizard.description.readingView2")}</p>
+                                <p>{__("wizard.description.readingView1")}</p>
+                                <p>{__("wizard.description.readingView2")}</p>
                                 <img src={ReadingImage} />
                                 <div className={stylesModals.guidedTour_buttons}>
                                     <Tabs.List>
@@ -216,7 +216,7 @@ export const WizardModal = () => {
                                 </div>
                             </div>
                         </Tabs.Content>
-                        <Tabs.Content value="tab5" tabIndex={-1}>
+                        <Tabs.Content value="tab5" tabIndex={-1} className="R2_CSS_CLASS__FORCE_NO_FOCUS_OUTLINE">
                             <TabHeader title={""} />
                             <div className={classNames(stylesSettings.settings_tab, stylesModals.guidedTour_tab)}>
                                 <h3>{__("wizard.title.newFeature")}</h3>
@@ -236,7 +236,7 @@ export const WizardModal = () => {
 
                 {/* <div className={stylesSettings.close_button_div}>
                     <Dialog.Close asChild>
-                        <button className={stylesButtons.button_transparency_icon} aria-label="Close">
+                        <button data-css-override="" className={stylesButtons.button_transparency_icon} aria-label={__("accessibility.closeDialog")}>
                             <SVG ariaHidden={true} svg={QuitIcon} />
                         </button>
                     </Dialog.Close>

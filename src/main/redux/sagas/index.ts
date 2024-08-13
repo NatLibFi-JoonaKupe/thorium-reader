@@ -35,6 +35,7 @@ import * as win from "./win";
 import * as telemetry from "./telemetry";
 import * as lcp from "./lcp";
 import * as catalog from "./catalog";
+import * as annotation from "./annotation";
 
 import { IS_DEV } from "readium-desktop/preprocessor-directives";
 // Logger
@@ -124,6 +125,9 @@ export function* rootSaga() {
     // need to track the previous state version before update in initSuccess.build
     yield call(telemetry.collectSaveAndSend);
 
+    // export annotations
+    yield annotation.saga();
+
     // app initialized
     yield put(appActions.initSuccess.build());
 
@@ -145,12 +149,15 @@ function* checkAppVersionUpdate() {
     // const JSON_URL = `https://raw.githack.com/edrlab/thorium-reader/${BRANCH}/latest.json`;
     try {
         let version = IS_DEV ? yield* select((state: RootState) => state.version) : null;
-        // src/main/redux/reducers/index.ts
-        // version: (state: RootState, action: ActionWithSender) => action.type === appActions.initSuccess.ID ? _APP_VERSION : (state?.version ? state.version : null),
+        // src/common/redux/reducers/version.ts
+        // version is null (initial state) or current _APP_VERSION (package.json version)
+        // telemetry.collectSaveAndSend (prev_version handling) is called before appActions.initSuccess, and finally this checkAppVersionUpdate Saga is called after appActions.initSuccess
         if (IS_DEV && _APP_VERSION !== version) {
+            // at that point, this should never happen (see Saga order described in comment above)
             debug("VERSION MISMATCH (checkAppVersionUpdate): ", _APP_VERSION, " !== ", version);
         }
         if (!version) {
+            // at that point, this should never happen (see Saga order described in comment above)
             version = _APP_VERSION;
         }
 

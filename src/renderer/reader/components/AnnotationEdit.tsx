@@ -27,6 +27,8 @@ import { readerLocalActionSetConfig } from "../redux/actions";
 import classNames from "classnames";
 import { TextArea } from "react-aria-components";
 
+// import { readiumCSSDefaults } from "@r2-navigator-js/electron/common/readium-css-settings";
+
 interface IProps {
     save: (color: IColor, comment: string, drawType: TDrawType) => void;
     cancel: () => void;
@@ -71,13 +73,20 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
     const [__] = useTranslator();
     const { annotation_defaultColor, annotation_defaultDrawType } = useSelector((state: IReaderRootState) => state.reader.defaultConfig);
 
-    const { cleanText } = useSelector((state: IReaderRootState) => state.annotation);
+    const { locatorExtended } = useSelector((state: IReaderRootState) => state.annotation);
+    const annotationReaderState = useSelector((state: IReaderRootState) => state.reader.annotation);
 
-    let annotationState: Pick<IAnnotationState, "color" | "comment" | "drawType"> & { locatorExtended: { selectionInfo: { cleanText: string } } }
-        = { color: annotation_defaultColor, comment: "", drawType: annotation_defaultDrawType, locatorExtended: { selectionInfo: { cleanText } } };
+    const annotationStateDEFAULT: Omit<IAnnotationState, "uuid"> = { color: annotation_defaultColor, comment: "", drawType: annotation_defaultDrawType, locatorExtended };
+    let annotationState: typeof annotationStateDEFAULT = annotationStateDEFAULT;
     if (uuid) {
-        [, annotationState] = useSelector((state: IReaderRootState) => state.reader.annotation.find(([, annotationState]) => annotationState.uuid === uuid));
-    } 
+        const tpl = annotationReaderState.find(([, annotationState]) => annotationState.uuid === uuid);
+        if (tpl) {
+            const [, iannotationState] = tpl;
+            if (iannotationState) {
+                annotationState = iannotationState;
+            }
+        }
+    }
 
     const colorStr = `#${annotationState.color.red.toString(16).padStart(2, "0")}${annotationState.color.green.toString(16).padStart(2, "0")}${annotationState.color.blue.toString(16).padStart(2, "0")}`.toUpperCase();
 
@@ -94,7 +103,6 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
       } : annotationState.color;
 
     const previousColorSelected = React.useRef<IColor>(colorObj);
-
 
     const textAreaRef = React.useRef<HTMLTextAreaElement>();
 
@@ -147,10 +155,10 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
     React.useEffect(() => {
         if (textAreaRef.current) {
             textAreaRef.current.style.height = "auto";
-            textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 3 + "px";
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight + 3}px`;
             textAreaRef.current.focus();
         }
-    }, []);
+    }, []); // empty => runs once on mount (undefined => runs on every render)
 
     const component = <form
         className={displayFromReaderMenu ? stylesAnnotations.annotation_edit_form : stylesAnnotations.annotation_form}
@@ -160,7 +168,7 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
         }
         <div
             className={classNames(displayFromReaderMenu ? "" : stylesAnnotations.annotations_line, dockedMode ? stylesAnnotations.docked_annotation_line : "")} style={{backgroundColor: !displayFromReaderMenu ? "var(--color-extralight-grey)" : ""}}>
-            <p>{annotationState.locatorExtended.selectionInfo.cleanText}</p>
+            <p>{annotationState.locatorExtended ? (annotationState.locatorExtended.selectionInfo.cleanText.length > (200-3) ? `${annotationState.locatorExtended.selectionInfo.cleanText.slice(0, 200)}...` : annotationState.locatorExtended.selectionInfo.cleanText) : ""}</p>
             <TextArea id="addNote" name="addNote" wrap="hard" className={displayFromReaderMenu ? stylesAnnotations.annotation_edit_form_textarea : stylesAnnotations.annotation_form_textarea} defaultValue={annotationState.comment} ref={textAreaRef}
             ></TextArea>
 
@@ -171,11 +179,12 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
                 <h4>{__("reader.annotations.Color")}</h4>
                 <div className={stylesAnnotations.colorPicker}
                     role="radiogroup">
-                    {annotationsColorsLight.map((color) => (
+                    {annotationsColorsLight.map((color, i) => (
                         <div key={color}>
                             <input type="radio"  id={`anno_color_${uuid}_${color}`} name="colorpicker" value={color}
                                 onChange={() => setColor(color)}
                                 checked={colorSelected === color}
+                                aria-label={`${__("reader.annotations.Color")} ${i} (${color.split("").join(" ")})`}
                             />
                             <label htmlFor={`anno_color_${uuid}_${color}`}
                                 style={{ backgroundColor: color, border: colorSelected === color ? "1px solid var(--color-dark-grey)" : "" }}
@@ -195,8 +204,10 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
                             <input type="radio" id={`anno_type_${uuid}_${type}`} name="drawtype" value={type}
                                 onChange={() => setDrawType(type)}
                                 checked={drawTypeSelected === type}
+                                aria-label={`${__("reader.annotations.highlight")} ${type === "solid_background" ? __("reader.annotations.type.solid") : type === "outline" ? __("reader.annotations.type.outline") : type === "underline" ? __("reader.annotations.type.underline") : type === "strikethrough" ? __("reader.annotations.type.strikethrough") : __("reader.annotations.type.solid")}`}
                             />
-                            <label htmlFor={`anno_type_${uuid}_${type}`} aria-label={type}
+                            <label htmlFor={`anno_type_${uuid}_${type}`}
+                                title={`${type === "solid_background" ? __("reader.annotations.type.solid") : type === "outline" ? __("reader.annotations.type.outline") : type === "underline" ? __("reader.annotations.type.underline") : type === "strikethrough" ? __("reader.annotations.type.strikethrough") : __("reader.annotations.type.solid")}`}
                                 className={drawTypeSelected === type ? stylesAnnotations.drawType_active : ""}
                             ><SVG ariaHidden svg={drawIcon[i]} /></label>
                         </div>
@@ -204,18 +215,41 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
                     )}
                 </div>
             </div>
+{/* annotationState.locatorExtended &&
+            <details><summary>{__("reader.settings.preview")}</summary><div>{<p style={{
+                backgroundColor: (!readerConfig.theme || readerConfig.theme === "neutral") ? (readiumCSSDefaults.backgroundColor || "white") :
+                    readerConfig.theme === "sepia" ? "#faf4e8" :
+                    readerConfig.theme === "night" ? "#121212" :
+                    readerConfig.theme === "paper" ? "#E9DDC8" :
+                    readerConfig.theme === "contrast1" ? "#000000" :
+                    readerConfig.theme === "contrast2" ? "#000000" :
+                    readerConfig.theme === "contrast3" ? "#181842" :
+                    readerConfig.theme === "contrast4" ? "#C5E7CD" :
+                    (readiumCSSDefaults.backgroundColor || "white"),
+                color: (!readerConfig.theme || readerConfig.theme === "neutral") ? (readiumCSSDefaults.textColor || "black") :
+                    readerConfig.theme === "sepia" ? "black" :
+                    readerConfig.theme === "night" ? "#fff" :
+                    readerConfig.theme === "paper" ? "#000000" :
+                    readerConfig.theme === "contrast1" ? "#fff" :
+                    readerConfig.theme === "contrast2" ? "#FFFF00" :
+                    readerConfig.theme === "contrast3" ? "#FFFF" :
+                    readerConfig.theme === "contrast4" ? "#000000" :
+                    (readiumCSSDefaults.textColor || "black"),
+            }}><span>{annotationState.locatorExtended.selectionInfo.cleanBefore}</span><span style={{
+                backgroundColor: colorSelected,
+            }}>{annotationState.locatorExtended.selectionInfo.cleanText}</span><span>{annotationState.locatorExtended.selectionInfo.cleanAfter}</span></p>}</div></details> */}
         </div>
 
         {/* <label htmlFor="addNote">{__("reader.annotations.addNote")}</label> */}
         <div className={stylesAnnotations.annotation_form_textarea_buttons}>
             {displayFromReaderMenu
-                ? <button className={stylesButtons.button_secondary_blue} aria-label="cancel" onClick={cancel} type="button">{__("dialog.cancel")}</button>
-                : <Popover.Close className={stylesButtons.button_secondary_blue} aria-label="cancel" onClick={cancel}>{__("dialog.cancel")}</Popover.Close>
+                ? <button className={stylesButtons.button_secondary_blue} aria-label={__("dialog.cancel")} onClick={cancel} type="button">{__("dialog.cancel")}</button>
+                : <Popover.Close className={stylesButtons.button_secondary_blue} aria-label={__("dialog.cancel")} onClick={cancel}>{__("dialog.cancel")}</Popover.Close>
             }
             {displayFromReaderMenu
                 ? <button type="submit"
                     className={stylesButtons.button_primary_blue}
-                    aria-label="save"
+                    aria-label={__("reader.annotations.saveNote")}
                     onClick={(e) => {
                         e.preventDefault();
 
@@ -232,7 +266,7 @@ export const AnnotationEdit: React.FC<IProps> = (props) => {
                 <Popover.Close
                     type="submit"
                     className={stylesButtons.button_primary_blue}
-                    aria-label="save"
+                    aria-label={__("reader.annotations.saveNote")}
                     onClick={(e) => {
                         e.preventDefault();
 

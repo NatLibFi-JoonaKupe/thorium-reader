@@ -127,6 +127,7 @@ declare namespace typed_i18n {
     readonly "lastAdditions": string
   },
   readonly "export": string,
+  readonly "exportAnnotation": string,
   readonly "format": string,
   readonly "lang": string,
   readonly "lastRead": string,
@@ -206,6 +207,7 @@ declare namespace typed_i18n {
   (_: "catalog.entry.continueReadingPdf", __?: {}): string;
   (_: "catalog.entry.lastAdditions", __?: {}): string;
   (_: "catalog.export", __?: {}): string;
+  (_: "catalog.exportAnnotation", __?: {}): string;
   (_: "catalog.format", __?: {}): string;
   (_: "catalog.lang", __?: {}): string;
   (_: "catalog.lastRead", __?: {}): string;
@@ -702,7 +704,13 @@ declare namespace typed_i18n {
     readonly "noSelectionToast": string,
     readonly "quickAnnotations": string,
     readonly "saveNote": string,
-    readonly "toggleMarginMarks": string
+    readonly "toggleMarginMarks": string,
+    readonly "type": {
+      readonly "outline": string,
+      readonly "solid": string,
+      readonly "strikethrough": string,
+      readonly "underline": string
+    }
   },
   readonly "divina": { readonly "mute": string, readonly "unmute": string },
   readonly "fxl": { readonly "fit": string },
@@ -848,7 +856,13 @@ declare namespace typed_i18n {
   readonly "noSelectionToast": string,
   readonly "quickAnnotations": string,
   readonly "saveNote": string,
-  readonly "toggleMarginMarks": string
+  readonly "toggleMarginMarks": string,
+  readonly "type": {
+    readonly "outline": string,
+    readonly "solid": string,
+    readonly "strikethrough": string,
+    readonly "underline": string
+  }
 };
   (_: "reader.annotations.Color", __?: {}): string;
   (_: "reader.annotations.addNote", __?: {}): string;
@@ -860,6 +874,16 @@ declare namespace typed_i18n {
   (_: "reader.annotations.quickAnnotations", __?: {}): string;
   (_: "reader.annotations.saveNote", __?: {}): string;
   (_: "reader.annotations.toggleMarginMarks", __?: {}): string;
+  (_: "reader.annotations.type", __?: {}): {
+  readonly "outline": string,
+  readonly "solid": string,
+  readonly "strikethrough": string,
+  readonly "underline": string
+};
+  (_: "reader.annotations.type.outline", __?: {}): string;
+  (_: "reader.annotations.type.solid", __?: {}): string;
+  (_: "reader.annotations.type.strikethrough", __?: {}): string;
+  (_: "reader.annotations.type.underline", __?: {}): string;
   (_: "reader.divina", __?: {}): { readonly "mute": string, readonly "unmute": string };
   (_: "reader.divina.mute", __?: {}): string;
   (_: "reader.divina.unmute", __?: {}): string;

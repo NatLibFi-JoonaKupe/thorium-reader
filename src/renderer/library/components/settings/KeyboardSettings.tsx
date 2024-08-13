@@ -147,7 +147,20 @@ class KeyboardSettings extends React.Component<IProps, IState> {
 
         return (
             <>
-                <section>
+                <section onKeyDown={
+                    this.state.editKeyboardShortcutId ? ((e: React.KeyboardEvent<HTMLDivElement>) => {
+                        if (e.key === "Escape") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const id = this.state.editKeyboardShortcutId;
+                            this.onClickKeyboardShortcutEditCancel(this.state.editKeyboardShortcutId);
+                            setTimeout(() => {
+                                const el = document.getElementById(`keyEditButt_${id}`);
+                                el?.blur();
+                                el?.focus();
+                            }, 100);
+                        }
+                    }) : undefined}>
                     <div className={classNames(stylesGlobal.d_flex, stylesButtons.button_outline_accessibility)}>
                     {/* {!this.state.editKeyboardShortcutId && (
                         <AdvancedTrigger
@@ -161,18 +174,7 @@ class KeyboardSettings extends React.Component<IProps, IState> {
                             <p>{__("settings.keyboard.disclaimer")}</p>
                         </div>
                     </div>
-                        <div
-                            onKeyUp={this.state.editKeyboardShortcutId ? ((e: React.KeyboardEvent<HTMLDivElement>) => {
-                                if (e.key === "Escape") {
-                                    const id = this.state.editKeyboardShortcutId;
-                                    this.onClickKeyboardShortcutEditCancel(this.state.editKeyboardShortcutId);
-                                    setTimeout(() => {
-                                        const el = document.getElementById(`keyEditButt_${id}`);
-                                        el?.blur();
-                                        el?.focus();
-                                    }, 100);
-                                }
-                            }) : undefined}>
+                        <div>
                             <ul className={stylesGlobal.p_0}>
                             {this.props.keyboardShortcuts &&
                             ObjectKeys(sortObject(this.props.keyboardShortcuts) as TKeyboardShortcutsMap).map((id) => {
@@ -195,6 +197,8 @@ class KeyboardSettings extends React.Component<IProps, IState> {
                                                         el?.focus();
                                                     }, 100);
                                                 }}
+                                                aria-label={`${__("app.edit.title")} (${id}) ${this.stringifyKeyboardShortcut(def)}`}
+                                                // title={`${__("app.edit.title")} (${id}) ${this.stringifyKeyboardShortcut(def)}`}
                                             ><SVG ariaHidden svg={EditIcon} /></button>
                                         </div>
                                         {
@@ -215,7 +219,8 @@ class KeyboardSettings extends React.Component<IProps, IState> {
                                                                 el?.focus();
                                                             }, 100);
                                                         }}
-                                                        aria-label={`${hit ? __("settings.keyboard.cancel") : ""} (${id}) ${this.stringifyKeyboardShortcut(def)}`}
+                                                        aria-label={`${__("settings.keyboard.cancel")} (${id}) ${this.stringifyKeyboardShortcut(this.state.editKeyboardShortcutData)}`}
+                                                        // title={`${__("settings.keyboard.cancel")} (${id}) ${this.stringifyKeyboardShortcut(this.state.editKeyboardShortcutData)}`}
                                                         >
                                                         {hit ?
                                                         __("settings.keyboard.cancel") : ""}
@@ -231,7 +236,8 @@ class KeyboardSettings extends React.Component<IProps, IState> {
                                                                 el?.focus();
                                                             }, 100);
                                                         }}
-                                                        aria-label={`${__("settings.keyboard.save")} (${id})`}
+                                                        aria-label={`${__("settings.keyboard.save")} (${id}) ${this.stringifyKeyboardShortcut(this.state.editKeyboardShortcutData)}`}
+                                                        // title={`${__("settings.keyboard.save")} (${id}) ${this.stringifyKeyboardShortcut(this.state.editKeyboardShortcutData)}`}
                                                         >
                                                             <SVG ariaHidden svg={SaveIcon} />
                                                         {__("settings.keyboard.save")}

@@ -75,6 +75,7 @@
             "lastAdditions": "Recently added"
         },
         "export": "Save as",
+        "exportAnnotation": "Save annotation as",
         "format": "Format",
         "lang": "Language",
         "lastRead": "Last Read",
@@ -288,14 +289,14 @@
             "title": "Progression"
         },
         "read": "Finished",
-        "remainingTime": "Loans (remaining days)",
+        "remainingTime": "Loan (remaining time)",
         "renewButton": "Renew",
         "returnButton": "Return",
         "returnedLcp": "This LCP-protected publication is returned.",
         "revokedLcp": "This publication's LCP license is revoked.",
         "seeLess": "See less",
         "seeMore": "See more",
-        "timeLeft": "Left",
+        "timeLeft": "Remaining time",
         "title": "Title",
         "userKeyCheckInvalid": "Incorrect passphrase"
     },
@@ -310,7 +311,13 @@
             "noSelectionToast": "No selection",
             "quickAnnotations": "Quick create (skip editor)",
             "saveNote": "Save",
-            "toggleMarginMarks": "Display in margins"
+            "toggleMarginMarks": "Display in margins",
+            "type": {
+                "outline": "Outline",
+                "solid": "Solid background",
+                "strikethrough": "Strikethrough",
+                "underline": "Underline"
+            }
         },
         "divina": {
             "mute": "mute audio",

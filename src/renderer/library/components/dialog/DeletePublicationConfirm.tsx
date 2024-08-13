@@ -25,7 +25,7 @@ const DeletePublicationConfirm = (props: { publicationView: PublicationView, tri
     const removeAction = React.useCallback(() => {
         dispatch(dialogActions.closeRequest.build());
         remove(props.publicationView.identifier);
-    }, [remove, props.publicationView.identifier]);
+    }, [dispatch, remove, props.publicationView.identifier]);
 
     return (
         <AlertDialog.Root {...props}>
@@ -33,10 +33,7 @@ const DeletePublicationConfirm = (props: { publicationView: PublicationView, tri
                 {props.trigger}
             </AlertDialog.Trigger>
             <AlertDialog.Portal>
-
-                {/** Overlay Component doesn't work */}
-                {/* <AlertDialog.Overlay className={stylesAlertModals.AlertDialogOverlay}/> */}
-                <div className={stylesAlertModals.AlertDialogOverlay}></div>
+                <AlertDialog.Overlay className={stylesAlertModals.AlertDialogOverlay}/>
                 <AlertDialog.Content className={stylesAlertModals.AlertDialogContent}>
                     <AlertDialog.Title className={stylesAlertModals.AlertDialogTitle}>{__("dialog.deletePublication")}</AlertDialog.Title>
                     <AlertDialog.Description className={stylesAlertModals.AlertDialogDescription}>
