@@ -7,13 +7,25 @@
 
 import * as debug_ from "debug";
 import { promises as fsp } from "fs";
+
+// TypeScript GO:
+// The current file is a CommonJS module whose imports will produce 'require' calls;
+// however, the referenced file is an ECMAScript module and cannot be imported with 'require'.
+// Consider writing a dynamic 'import("...")' call instead.
+// To convert this file to an ECMAScript module, change its file extension to '.mts',
+// or add the field `"type": "module"` to 'package.json'.
+// @__ts-expect-error TS1479 (with TypeScript tsc ==> TS2578: Unused '@ts-expect-error' directive)
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore TS1479
 import { nanoid } from "nanoid";
+
 import * as os from "os";
 import * as path from "path";
 import { acceptedExtensionObject } from "readium-desktop/common/extension";
 import { _APP_NAME } from "readium-desktop/preprocessor-directives";
 
-import { injectBufferInZip } from "@r2-utils-js/_utils/zip/zipInjector";
+// import { injectBufferInZip } from "@r2-utils-js/_utils/zip/zipInjector";
+import { injectBufferInZip } from "../../tools/zipInjector";
 
 // Logger
 const debug = debug_("readium-desktop:main#w3c/lpf/tools");

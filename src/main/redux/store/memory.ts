@@ -15,7 +15,6 @@ import { reduxSyncMiddleware } from "readium-desktop/main/redux/middleware/sync"
 import { rootReducer } from "readium-desktop/main/redux/reducers";
 import { rootSaga } from "readium-desktop/main/redux/sagas";
 import { PersistRootState, RootState } from "readium-desktop/main/redux/states";
-import { IS_DEV } from "readium-desktop/preprocessor-directives";
 import { tryCatch, tryCatchSync } from "readium-desktop/utils/tryCatch";
 import { applyMiddleware, legacy_createStore as createStore, type Store } from "redux";
 import createSagaMiddleware, { SagaMiddleware } from "redux-saga";
@@ -23,7 +22,12 @@ import { applyPatch } from "rfc6902";
 
 import { reduxPersistMiddleware } from "../middleware/persistence";
 import { readerConfigInitialState } from "readium-desktop/common/redux/states/reader";
-import { defaultDisableRTLFLip } from "readium-desktop/common/redux/states/renderer/rtlFlip";
+import { LocatorExtended } from "@r2-navigator-js/electron/renderer";
+import { minimizeLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
+import { EDrawType, INoteState, NOTE_DEFAULT_COLOR_OBJ, TDrawType } from "readium-desktop/common/redux/states/renderer/note";
+import { clone } from "ramda";
+import { TBookmarkState } from "readium-desktop/common/redux/states/bookmark";
+import { TAnnotationState } from "readium-desktop/common/redux/states/renderer/annotation";
 
 // import { composeWithDevTools } from "remote-redux-devtools";
 const REDUX_REMOTE_DEVTOOLS_PORT = 7770;
@@ -212,22 +216,235 @@ export async function initStore()
     debug("REDUX STATE VALUE :: ", typeof reduxState, reduxState ? Object.keys(reduxState) : "nil");
     // debug(reduxState);
 
-    const forceDisableReaderDefaultConfigAndSessionForTheNewUI: Partial<PersistRootState> = {
-        reader: {
-            defaultConfig: readerConfigInitialState,
-            disableRTLFlip: reduxState?.reader?.disableRTLFlip || { disabled: defaultDisableRTLFLip },
-        },
-        session: {
-            state: true,
-            save: reduxState?.session?.save || false,
-        },
-    };
-    const preloadedState = reduxState ? {
+    // const forceDisableReaderDefaultConfigAndSessionForTheNewUI: Partial<PersistRootState> = {
+        // reader: {
+
+        //     // reader default config could be removed
+        //     // defaultConfig: readerConfigInitialState,
+
+        //     // just disableRTLFlip use yet
+        //     disableRTLFlip: reduxState?.reader?.disableRTLFlip || { disabled: defaultDisableRTLFLip },
+        // },
+        // session: {
+
+        //     // not used anymore, just force to true in main and lib, but not declared in reader (false by default)
+        //     // state: true,
+
+        //     // save is used to know if the session must be saved at the end
+        //     // save: reduxState?.session?.save || false,
+        // },
+    // };
+    // const preloadedState = reduxState ? {
+    //     ...reduxState,
+    //     ...forceDisableReaderDefaultConfigAndSessionForTheNewUI,
+    // } : {
+    //     ...forceDisableReaderDefaultConfigAndSessionForTheNewUI,
+    // };
+    const preloadedState: Partial<PersistRootState> = reduxState ? {
         ...reduxState,
-        ...forceDisableReaderDefaultConfigAndSessionForTheNewUI,
-    } : {
-        ...forceDisableReaderDefaultConfigAndSessionForTheNewUI,
-    };
+    } : {};
+
+    if (preloadedState.win?.registry?.reader) {
+        for (const id in preloadedState.win.registry.reader) {
+            const state = preloadedState.win.registry.reader[id];
+
+            if (state?.reduxState?.locator) {
+                const locatorExtended = state.reduxState.locator as LocatorExtended;
+                if (locatorExtended.followingElementIDs) {
+                    debug("REMOVE preloadedState.win.registry.reader[id].reduxState.locator.followingElementIDs (LocatorExtended): ", locatorExtended.followingElementIDs.length);
+                }
+                // REMOVE locatorExtended.followingElementIDs, no-op if property does not exist (same object returned)
+                state.reduxState.locator = minimizeLocatorExtended(locatorExtended);
+
+                // SEE isDivinaLocation duck typing hack with totalProgression injection!!
+                const locations = state.reduxState.locator.locator?.locations as any;
+                if (locations?.totalProgression) {
+                    debug("INFO DIVINA preloadedState.win.registry.reader[id].reduxState.locator.locations.totalProgression: ", locations.totalProgression);
+                }
+
+                if ((state.reduxState.locator.locator?.locations as any)?.rangeInfo) {
+                    state.reduxState.locator.locator.locations.caretInfo = {
+                        rangeInfo: (state.reduxState.locator.locator.locations as any).rangeInfo,
+                        textFragment: undefined,
+                        cleanBefore: "",
+                        cleanText: "",
+                        cleanAfter: "",
+                        rawBefore: "",
+                        rawText: "",
+                        rawAfter: "",
+                    };
+                }
+            }
+
+            if ((state?.reduxState as any)?.annotation) {
+                for (const annotation of (state.reduxState as any).annotation as TAnnotationState) {
+                    if (annotation[1].locatorExtended) {
+                        const locatorExtended = annotation[1].locatorExtended as LocatorExtended;
+                        if (locatorExtended.followingElementIDs) {
+                            debug("REMOVE preloadedState.win.registry.reader[id].reduxState.annotation[i].locatorExtended.followingElementIDs (LocatorExtended): ", locatorExtended.followingElementIDs.length);
+                        }
+
+                        if ((annotation[1].locatorExtended.locator.locations as any)?.rangeInfo) {
+                            annotation[1].locatorExtended.locator.locations.caretInfo = {
+                                rangeInfo: (annotation[1].locatorExtended.locator.locations as any).rangeInfo,
+                                textFragment: undefined,
+                                cleanBefore: "",
+                                cleanText: "",
+                                cleanAfter: "",
+                                rawBefore: "",
+                                rawText: "",
+                                rawAfter: "",
+                            };
+                        }
+                        // REMOVE locatorExtended.followingElementIDs, no-op if property does not exist (same object returned)
+                        annotation[1].locatorExtended = minimizeLocatorExtended(annotation[1].locatorExtended);
+                    }
+                }
+            }
+
+            if ((state?.reduxState as any)?.bookmark) {
+                for (const bookmark of (state.reduxState as any).bookmark as TBookmarkState) {
+                    if ((bookmark[1] as any)?.locator) {
+                        bookmark[1].locatorExtended = {
+                            locator: (bookmark[1] as any).locator,
+                            audioPlaybackInfo: undefined,
+                            paginationInfo: undefined,
+                            selectionInfo: undefined,
+                            selectionIsNew: undefined,
+                            docInfo: undefined,
+                            epubPage: undefined,
+                            epubPageID: undefined,
+                            headings: undefined,
+                            secondWebViewHref: undefined,
+                        };
+                        (bookmark[1] as any).locator = undefined;
+                        delete (bookmark[1] as any).locator;
+                    }
+                    if (bookmark[1].locatorExtended) {
+                        const locatorExtended = bookmark[1].locatorExtended as LocatorExtended;
+                        if (locatorExtended.followingElementIDs) {
+                            debug("REMOVE preloadedState.win.registry.reader[id].reduxState.bookmark[i].locatorExtended.followingElementIDs (LocatorExtended): ", locatorExtended.followingElementIDs.length);
+                        }
+
+                        if ((bookmark[1].locatorExtended.locator.locations as any)?.rangeInfo) {
+                            bookmark[1].locatorExtended.locator.locations.caretInfo = {
+                                rangeInfo: (bookmark[1].locatorExtended.locator.locations as any).rangeInfo,
+                                textFragment: undefined,
+                                cleanBefore: "",
+                                cleanText: "",
+                                cleanAfter: "",
+                                rawBefore: "",
+                                rawText: "",
+                                rawAfter: "",
+                            };
+                        }
+                        // REMOVE locatorExtended.followingElementIDs, no-op if property does not exist (same object returned)
+                        bookmark[1].locatorExtended = minimizeLocatorExtended(bookmark[1].locatorExtended);
+                    }
+                    if (!bookmark[1].color) {
+                        bookmark[1].color = { ...NOTE_DEFAULT_COLOR_OBJ };
+                    }
+                }
+            }
+
+            if (state?.reduxState) {
+                if (!state.reduxState.note) {
+                    state.reduxState.note = [];
+                }
+            }
+
+            if ((state?.reduxState as any)?.bookmarkTotalCount !== undefined) {
+                if (!state.reduxState.noteTotalCount?.state) {
+                    state.reduxState.noteTotalCount = {
+                        state: 0,
+                    };
+                }
+                state.reduxState.noteTotalCount.state = (state?.reduxState as any)?.bookmarkTotalCount?.state || 0;
+                (state.reduxState as any).bookmarkTotalCount = undefined;
+            }
+
+            if ((state?.reduxState as any)?.bookmark) {
+
+                let noteTotalCount = state.reduxState.noteTotalCount?.state || 0;
+                for (const [_timestamp, bookmark] of (state.reduxState as any).bookmark as TBookmarkState) {
+
+                    const note: INoteState = {
+                        uuid: bookmark.uuid,
+                        index: bookmark.index || ++noteTotalCount,
+                        locatorExtended: bookmark.locatorExtended,
+                        textualValue: bookmark.name,
+                        color: bookmark.color,
+                        drawType: EDrawType.bookmark,
+                        tags: bookmark.tags,
+                        modified: bookmark.modified,
+                        created: bookmark.created,
+                        creator: bookmark.creator,
+                        group: "bookmark",
+                    };
+
+                    state.reduxState.note.push(clone(note));
+                }
+                (state.reduxState as any).bookmark = undefined;
+
+                if (!state.reduxState.noteTotalCount?.state) {
+                    state.reduxState.noteTotalCount = {
+                        state: 0,
+                    };
+                }
+                state.reduxState.noteTotalCount.state = noteTotalCount;
+            }
+
+            if ((state?.reduxState as any)?.annotation ) {
+
+                let noteTotalCount = state.reduxState.noteTotalCount?.state || 0;
+                for (const [_timestamp, annotation] of ((state.reduxState as any).annotation as TAnnotationState)) {
+
+                    const note: INoteState = {
+                        uuid: annotation.uuid,
+                        index: ++noteTotalCount,
+                        locatorExtended: annotation.locatorExtended,
+                        textualValue: annotation.comment,
+                        color: annotation.color,
+                        drawType: EDrawType[annotation.drawType as TDrawType] || EDrawType.solid_background,
+                        tags: annotation.tags,
+                        modified: annotation.modified,
+                        created: annotation.created,
+                        creator: annotation.creator,
+                        group: "annotation",
+                    };
+
+                    state.reduxState.note.push(clone(note));
+                }
+                (state.reduxState as any).annotation = undefined;
+
+                if (!state.reduxState.noteTotalCount?.state) {
+                    state.reduxState.noteTotalCount = {
+                        state: 0,
+                    };
+                }
+                state.reduxState.noteTotalCount.state = noteTotalCount;
+            }
+
+
+        }
+    }
+
+    // defaultConfig state initialization from older database thorium version 2.x, 3.0
+    if (preloadedState?.reader?.defaultConfig) {
+        preloadedState.reader.defaultConfig = { ...readerConfigInitialState, ...preloadedState.reader.defaultConfig };
+    }
+
+    if (preloadedState?.creator && !preloadedState.creator.urn) {
+        preloadedState.creator.urn = `urn:uuid:${preloadedState.creator.id}`;
+    }
+
+    if ((preloadedState as any)?.annotationImportQueue) {
+        // How to deal with the annotationImportQueue migration ?
+        // A wise decision will be to merge INotePreState to InoteState readerState.note
+        // But it is really necessary, the probability that the user upgrade thorium during an annotations import is pretty low ! Isn't it ?
+
+        // (preloadedState as any).annotationImportQueue = undefined;
+    }
 
     const sagaMiddleware = createSagaMiddleware();
 
@@ -237,8 +454,8 @@ export async function initStore()
         reduxPersistMiddleware,
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const middleware = IS_DEV ? require("remote-redux-devtools").composeWithDevTools(
+    // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-require-imports
+    const middleware = __TH__IS_DEV__ ? require("remote-redux-devtools").composeWithDevTools(
         {
             port: REDUX_REMOTE_DEVTOOLS_PORT,
         },

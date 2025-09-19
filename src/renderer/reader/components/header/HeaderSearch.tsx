@@ -5,14 +5,15 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+import * as stylesReader from "readium-desktop/renderer/assets/styles/reader-app.scss";
+import * as stylesReaderHeader from "readium-desktop/renderer/assets/styles/components/readerHeader.scss";
+
 import * as React from "react";
 // import * as Popover from "@radix-ui/react-popover";
 import { connect } from "react-redux";
 import { DEBUG_KEYBOARD, keyboardShortcutsMatch } from "readium-desktop/common/keyboard";
 import { IReaderRootState } from "readium-desktop/common/redux/states/renderer/readerRootState";
 import * as magnifyingGlass from "readium-desktop/renderer/assets/icons/magnifying_glass.svg";
-import * as stylesReader from "readium-desktop/renderer/assets/styles/reader-app.scss";
-import * as stylesReaderHeader from "readium-desktop/renderer/assets/styles/components/readerHeader.scss";
 import {
     TranslatorProps, withTranslator,
 } from "readium-desktop/renderer/common/components/hoc/translator";
@@ -22,9 +23,10 @@ import {
 } from "readium-desktop/renderer/common/keyboard";
 import { TDispatch } from "readium-desktop/typings/redux";
 
-import { readerLocalActionPicker, readerLocalActionSearch } from "../../redux/actions";
+import { readerLocalActionSearch } from "../../redux/actions";
 import * as QuitIcon from "readium-desktop/renderer/assets/icons/close-icon.svg";
 import SearchPicker from "../picker/Search";
+import { createOrGetPdfEventBus } from "../../pdf/driver";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface IBaseProps extends TranslatorProps {
@@ -167,7 +169,18 @@ class HeaderSearch extends React.Component<IProps> {
             }
             return;
         }
-        this.props.enableSearch(v || !this.props.isOnSearch);
+
+        if (this.props.isAudiobook || this.props.isDivina) {
+
+        } else {
+
+            if (this.props.isPdf) {
+                if (!v) {
+                    createOrGetPdfEventBus().dispatch("search-wipe");
+                }
+            }
+            this.props.enableSearch(v || !this.props.isOnSearch);
+        }
     };
 
 }
@@ -175,16 +188,15 @@ class HeaderSearch extends React.Component<IProps> {
 const mapStateToProps = (state: IReaderRootState) => ({
     keyboardShortcuts: state.keyboard.shortcuts,
     isOnSearch: state.search.enable,
+    locale: state.i18n.locale, // refresh
 });
 
 const mapDispatchToProps = (dispatch: TDispatch) => ({
     enableSearch: (enable: boolean) => {
         if (enable) {
             dispatch(readerLocalActionSearch.enable.build());
-            dispatch(readerLocalActionPicker.manager.build(true, "search"));
         } else {
             dispatch(readerLocalActionSearch.cancel.build());
-            dispatch(readerLocalActionPicker.manager.build(false));
         }
     },
 });

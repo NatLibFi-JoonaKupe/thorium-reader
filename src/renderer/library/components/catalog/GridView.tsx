@@ -5,14 +5,12 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+import * as stylesGlobal from "readium-desktop/renderer/assets/styles/global.scss";
+import * as stylesSlider from "readium-desktop/renderer/assets/styles/components/slider.scss";
+
 import * as React from "react";
 import { connect } from "react-redux";
 import { CatalogEntryView } from "readium-desktop/common/views/catalog";
-import * as stylesGlobal from "readium-desktop/renderer/assets/styles/global.scss";
-import * as stylesSlider from "readium-desktop/renderer/assets/styles/components/slider.scss";
-import {
-    TranslatorProps, withTranslator,
-} from "readium-desktop/renderer/common/components/hoc/translator";
 import PublicationCard from "readium-desktop/renderer/library/components/publication/PublicationCard";
 import Slider from "readium-desktop/renderer/library/components/utils/Slider";
 import { ILibraryRootState } from "readium-desktop/common/redux/states/renderer/libraryRootState";
@@ -26,7 +24,7 @@ import { useTranslator } from "readium-desktop/renderer/common/hooks/useTranslat
 import { _APP_NAME, _APP_VERSION } from "readium-desktop/preprocessor-directives";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface IBaseProps extends TranslatorProps {
+interface IBaseProps {
     catalogEntries: CatalogEntryView[];
     tags?: string[];
 }
@@ -53,22 +51,16 @@ enum SortStatus {
 const EntrySection = ({entry, entryIndex}: {entry: CatalogEntryView, entryIndex: number}) => {
     const [__] = useTranslator();
     let title = "";
+    let resetSliderPosition = false;
 
     switch (entry.id) {
         case "lastAdditions":
             title = __("catalog.entry.lastAdditions");
+            resetSliderPosition = false;
             break;
         case "continueReading":
             title = __("catalog.entry.continueReading");
-            break;
-        case "continueReadingAudioBooks":
-            title = __("catalog.entry.continueReadingAudioBooks");
-            break;
-        case "continueReadingDivina":
-            title = __("catalog.entry.continueReadingDivina");
-            break;
-        case "continueReadingPdf":
-            title = __("catalog.entry.continueReadingPdf");
+            resetSliderPosition = true;
             break;
     }
 
@@ -77,8 +69,9 @@ const EntrySection = ({entry, entryIndex}: {entry: CatalogEntryView, entryIndex:
                 <h2>{title}</h2>
             {
                 <Slider
+                    resetSliderPosition={resetSliderPosition}
                     className={classNames(stylesSlider.slider)}
-                    content={entry.publicationViews.map((pub: any) =>
+                    content={entry.publicationViews.map((pub) =>
                         <PublicationCard
                             key={pub.identifier}
                             publicationViewMaybeOpds={pub}
@@ -189,6 +182,7 @@ class CatalogGridView extends React.Component<IProps, IState> {
 
 const mapStateToProps = (state: ILibraryRootState) => ({
     location: state.router.location,
+    locale: state.i18n.locale, // refresh
 });
 
-export default connect(mapStateToProps)(withTranslator(CatalogGridView));
+export default connect(mapStateToProps)(CatalogGridView);

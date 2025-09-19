@@ -5,6 +5,7 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+import { encodeURIComponent_RFC3986 } from "@r2-utils-js/_utils/http/UrlUtils";
 import * as debug_ from "debug";
 import { BrowserWindow } from "electron";
 import * as path from "path";
@@ -13,7 +14,7 @@ import { diMainGet, saveReaderWindowInDi } from "readium-desktop/main/di";
 import { setMenu } from "readium-desktop/main/menu";
 import { winActions } from "readium-desktop/main/redux/actions";
 import {
-    _RENDERER_READER_BASE_URL, _VSCODE_LAUNCH, IS_DEV, OPEN_DEV_TOOLS, _CONTINUOUS_INTEGRATION_DEPLOY,
+    _RENDERER_READER_BASE_URL,
 } from "readium-desktop/preprocessor-directives";
 
 import {
@@ -27,7 +28,7 @@ import { WINDOW_MIN_HEIGHT, WINDOW_MIN_WIDTH } from "readium-desktop/common/cons
 const debug = debug_("readium-desktop:createReaderWindow");
 debug("_");
 
-const ENABLE_DEV_TOOLS = IS_DEV || _CONTINUOUS_INTEGRATION_DEPLOY;
+const ENABLE_DEV_TOOLS = __TH__IS_DEV__ || __TH__IS_CI__;
 
 export function* createReaderWindow(action: winActions.reader.openRequest.TAction) {
 
@@ -85,26 +86,17 @@ export function* createReaderWindow(action: winActions.reader.openRequest.TActio
     trackBrowserWindow(readerWindow);
 
     let readerUrl = _RENDERER_READER_BASE_URL;
-
     const htmlPath = "index_reader.html";
-
-    if (readerUrl === "file://") {
+    if (readerUrl === "filex://host/") {
         // dist/prod mode (without WebPack HMR Hot Module Reload HTTP server)
-        readerUrl += path.normalize(path.join(__dirname, htmlPath));
+        readerUrl += path.normalize(path.join(__dirname, htmlPath)).replace(/\\/g, "/").split("/").map((segment) => encodeURIComponent_RFC3986(segment)).join("/");
     } else {
         // dev/debug mode (with WebPack HMR Hot Module Reload HTTP server)
         readerUrl += htmlPath;
+        readerUrl = readerUrl.replace(/\\/g, "/");
     }
 
-    readerUrl = readerUrl.replace(/\\/g, "/");
-
-    yield* callTyped(() => readerWindow.webContents.loadURL(readerUrl, { extraHeaders: "pragma: no-cache\n" }));
-
-    // TODO shouldn't the call to reader.openSucess be fenced with if (!IS_DEV) {}, just like in createlibraryWindow??
-    // (otherwise called a second time in did-finish-load event handler below)
-    yield* putTyped(winActions.reader.openSucess.build(readerWindow, registerReaderAction.payload.identifier));
-
-    if (IS_DEV) {
+    if (true) { // __TH__IS_DEV__
 
         readerWindow.webContents.on("did-finish-load", () => {
             // see app.whenReady() in src/main/redux/sagas/app.ts
@@ -130,18 +122,29 @@ export function* createReaderWindow(action: winActions.reader.openRequest.TActio
             const store = diMainGet("store");
 
             store.dispatch(winActions.reader.openSucess.build(readerWindow, registerReaderAction.payload.identifier));
-
         });
-
-        if (_VSCODE_LAUNCH !== "true" && OPEN_DEV_TOOLS) {
-            setTimeout(() => {
-                if (!readerWindow.isDestroyed()) {
-                    debug("opening dev tools (reader) ...");
-                    readerWindow.webContents.openDevTools({ activate: true, mode: "detach" });
-                }
-            }, 2000);
-        }
     }
+
+    yield* callTyped(() => readerWindow.webContents.loadURL(readerUrl, { extraHeaders: "pragma: no-cache\n" }));
+
+    // // TODO shouldn't the call to reader.openSucess be fenced with if (!__TH__IS_DEV__) {}, just like in createlibraryWindow??
+    // // (otherwise called a second time in did-finish-load event handler below)
+    // if (!__TH__IS_DEV__) {
+    //     // see 'did-finish-load' otherwise
+    //     yield* putTyped(winActions.reader.openSucess.build(readerWindow, registerReaderAction.payload.identifier));
+    // }
+
+    // if (__TH__IS_DEV__) {
+
+    //     if (!__TH__IS_VSCODE_LAUNCH__ && OPEN_DEV_TOOLS) {
+    //         setTimeout(() => {
+    //             if (!readerWindow.isDestroyed() && !readerWindow.webContents.isDestroyed()) {
+    //                 debug("opening dev tools (reader) ...");
+    //                 readerWindow.webContents.openDevTools({ activate: true, mode: "detach" });
+    //             }
+    //         }, 2000);
+    //     }
+    // }
 
     setMenu(readerWindow, true);
 

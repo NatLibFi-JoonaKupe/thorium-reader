@@ -5,40 +5,49 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
-import { LocatorExtended } from "r2-navigator-js/dist/es8-es2017/src/electron/renderer";
-import { TPQueueState } from "readium-desktop/utils/redux-reducers/pqueue.reducer";
+import { MiniLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
 
-export interface IColor {
-    red: number;
-    green: number;
-    blue: number;
-}
+import { IPQueueState } from "readium-desktop/utils/redux-reducers/pqueue.reducer";
+import { INoteCreator } from "../creator";
+// import { IReadiumAnnotation } from "readium-desktop/common/readium/annotation/annotationModel.type";
+import { IColor } from "@r2-navigator-js/electron/common/highlight";
+import { TDrawType } from "./note";
 
-export type TDrawType = "solid_background" | "underline" | "strikethrough" | "outline";
+
+// export const annotationDrawType: TDrawType[] = [
+//     "solid_background",
+//     "underline",
+//     "strikethrough",
+//     "outline",
+// ];
+
+// export type IAnnotationPreParsingState = Pick<IAnnotationState, "uuid" | "comment" | "color" | "drawType" | "tags" | "modified" | "created" | "creator"> & { target: IReadiumAnnotation["target"] };
 
 export interface IAnnotationState {
     uuid: string;
-    locatorExtended: LocatorExtended;
+    locatorExtended: MiniLocatorExtended;
     comment: string;
     color: IColor;
     drawType: TDrawType;
+    tags?: string[] | undefined;
+    modified?: number;
+    created: number;
+    creator?: INoteCreator;
 }
 
-export type TAnnotationState = TPQueueState<number, IAnnotationState>;
+export type TAnnotationState = IQueueAnnotationState[];
+export type IQueueAnnotationState = IPQueueState<number, IAnnotationState>;
 
 export type IAnnotationModeState = {
     enable: true;
-    locatorExtended: LocatorExtended;
+    locatorExtended: MiniLocatorExtended;
+    fromKeyboard: boolean;
 } | {
     enable: false;
     locatorExtended: undefined;
+    fromKeyboard: undefined;
 };
 
-export type TDrawView = "annotation" | "margin" | "hide";
+// export type TDrawView = "annotation" | "margin" | "hide";
 
-export interface IAnnotationReaderConfigState {
-    annotation_popoverNotOpenOnNoteTaking: boolean;
-    annotation_defaultColor: IColor;
-    annotation_defaultDrawType: TDrawType;
-    annotation_defaultDrawView: TDrawView;
-}
+// export type TAnnotationTagsIndex = Record<string, number>;

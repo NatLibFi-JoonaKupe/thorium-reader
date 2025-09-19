@@ -8,7 +8,7 @@
 import { ipcRenderer, shell, WillNavigateEvent } from "electron";
 import * as path from "path";
 import {
-    _DIST_RELATIVE_URL, _PACKAGING, _RENDERER_PDF_WEBVIEW_BASE_URL, IS_DEV,
+    _DIST_RELATIVE_URL, _RENDERER_PDF_WEBVIEW_BASE_URL,
 } from "readium-desktop/preprocessor-directives";
 
 import { CONTEXT_MENU_SETUP } from "@r2-navigator-js/electron/common/context-menu";
@@ -19,6 +19,7 @@ import { encodeURIComponent_RFC3986 } from "@r2-utils-js/_utils/http/UrlUtils";
 
 import { eventBus } from "./common/eventBus";
 import { IEventBusPdfPlayer } from "./common/pdfReader.type";
+import { THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL, THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL__IP_ORIGIN_EXTRACT_PDF } from "readium-desktop/common/streamerProtocol";
 
 // bridge between webview tx-rx communication and reader.tsx
 
@@ -52,7 +53,7 @@ export function createOrGetPdfEventBus(): IEventBusPdfPlayer {
                       try {
 
                           const key = typeof message?.key !== "undefined" ? JSON.parse(message.key) : undefined;
-                          const data = typeof message?.payload !== "undefined" ? JSON.parse(message.payload) : [];
+                          const data = typeof message?.payload !== "undefined" ? typeof message.payload === "string" ? JSON.parse(message.payload) : message.payload : [];
                           console.log("ipc-message pdf-eventbus received", key, data);
 
                           if (Array.isArray(data)) {
@@ -74,6 +75,16 @@ export function createOrGetPdfEventBus(): IEventBusPdfPlayer {
 export function pdfMount(
     pdfPath: string,
     publicationViewport: HTMLDivElement,
+    data: {
+        page: string,
+        zoom: string,
+        // scrollLeft: number,
+        scrollTop: number,
+        // rotation: number,
+        // sidebarView: number,
+        // scrollMode: number,
+        // spreadMode: number,
+    }
 ) {
 
     if (pdfPath.startsWith(READIUM2_ELECTRON_HTTP_PROTOCOL)) {
@@ -81,6 +92,10 @@ export function pdfMount(
     }
 
     console.log("pdfPath ADJUSTED", pdfPath);
+
+    const pdfData = data;
+    const pdfDataString = JSON.stringify(pdfData);
+    const b64EncodedPdfData = Buffer.from(pdfDataString, "utf8").toString("base64");
 
     const webview = document.createElement("webview");
 
@@ -108,44 +123,43 @@ export function pdfMount(
         createOrGetPdfEventBus().dispatch("start", pdfPath);
     });
 
-    let preloadPath = "index_pdf.js";
-    if (_PACKAGING === "1") {
-        preloadPath = "file://" + path.normalize(path.join((global as any).__dirname, preloadPath));
+    // (global as any).__dirname
+    // BROKEN when index_reader.js is not served via file://
+    // ... so instead window.location.href provides dist/index_reader.html which is co-located:
+    // path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..")) etc.
+
+    const PDFPATH = "index_pdf.js";
+    let preloadPath = PDFPATH;
+    if (__TH__IS_PACKAGED__) {
+        preloadPath = "file://" + path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..", PDFPATH)).replace(/\\/g, "/");
     } else {
-        if (_RENDERER_PDF_WEBVIEW_BASE_URL === "file://") {
+        if (_RENDERER_PDF_WEBVIEW_BASE_URL === "filex://host/") {
             // dist/prod mode (without WebPack HMR Hot Module Reload HTTP server)
-            preloadPath = "file://" +
-                path.normalize(path.join((global as any).__dirname, _DIST_RELATIVE_URL, preloadPath));
+            preloadPath = "file://" + path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..", PDFPATH)).replace(/\\/g, "/");
+
+            // const debugStr = `[[PDF DRIVER ${preloadPath} >>> ${window.location.href} *** ${window.location.pathname} === ${process.cwd()} ^^^ ${(global as any).__dirname} --- ${_DIST_RELATIVE_URL} @@@ ${preloadPath}]]`;
+            // if (document.body.firstElementChild) {
+            //     document.body.innerText = debugStr;
+            // } else {
+            //     document.body.innerText += debugStr;
+            // }
         } else {
             // dev/debug mode (with WebPack HMR Hot Module Reload HTTP server)
-            preloadPath = "file://" + path.normalize(path.join(process.cwd(), "dist", preloadPath));
+            preloadPath = "file://" + path.normalize(path.join(process.cwd(), "dist", PDFPATH));
+            preloadPath = preloadPath.replace(/\\/g, "/");
         }
     }
-    preloadPath = preloadPath.replace(/\\/g, "/");
-    // let htmlPath = "index_pdf.html";
-    // if (_PACKAGING === "1") {
-    //     htmlPath = "file://" + path.normalize(path.join((global as any).__dirname, htmlPath));
-    // } else {
-    //     if (_RENDERER_PDF_WEBVIEW_BASE_URL === "file://") {
-    //         // dist/prod mode (without WebPack HMR Hot Module Reload HTTP server)
-    //         htmlPath = "file://" +
-    //             path.normalize(path.join((global as any).__dirname, _DIST_RELATIVE_URL, htmlPath));
-    //     } else {
-    //         // dev/debug mode (with WebPack HMR Hot Module Reload HTTP server)
-    //         htmlPath = "file://" + path.normalize(path.join(process.cwd(), "dist", htmlPath));
-    //     }
-    // }
-    // htmlPath = htmlPath.replace(/\\/g, "/");
 
     webview.setAttribute("style",
         "display: flex; margin: 0; padding: 0; box-sizing: border-box; position: absolute; left: 0; right: 0; bottom: 0; top: 0;");
     // webview.setAttribute("partition", "persist:pdfjsreader");
     webview.setAttribute("webpreferences",
-        `enableRemoteModule=0, allowRunningInsecureContent=0, backgroundThrottling=0, devTools=${IS_DEV ? "1" : "0"}, nodeIntegration=0, contextIsolation=0, nodeIntegrationInWorker=0, sandbox=0, webSecurity=1, webviewTag=0`);
+        `enableRemoteModule=0, allowRunningInsecureContent=0, backgroundThrottling=0, devTools=${__TH__IS_DEV__ ? "1" : "0"}, nodeIntegration=0, contextIsolation=0, nodeIntegrationInWorker=0, sandbox=0, webSecurity=1, webviewTag=0`);
     // webview.setAttribute("disablewebsecurity", "");
 
     webview.setAttribute("preload", preloadPath);
-    webview.setAttribute("src", "pdfjs://local/web/viewer.html?file=" + encodeURIComponent_RFC3986(pdfPath));
+    webview.setAttribute("src",
+        `${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL}://${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL__IP_ORIGIN_EXTRACT_PDF}/pdfjs/web/viewer.html?file=${encodeURIComponent_RFC3986(pdfPath)}&thoriumpdfdata=${encodeURIComponent_RFC3986(b64EncodedPdfData)}`);
 
     publicationViewport.append(webview);
 }
@@ -157,7 +171,7 @@ const webviewDomReadyDebugger = (ev: DOMEvent) => {
 
     webview.clearHistory();
 
-    if (IS_DEV) {
+    if (__TH__IS_DEV__) {
         ipcRenderer.send(CONTEXT_MENU_SETUP, webview.getWebContentsId());
     }
 };

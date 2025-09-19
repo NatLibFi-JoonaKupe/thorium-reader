@@ -39,6 +39,8 @@ export const mimeTypes = {
     "emma": "application/emma+xml",
     "emotionml": "application/emotionml+xml",
     "epub": "application/epub+zip",
+    // "epub3": "application/epub+zip",
+    // "pnlb": "application/epub+zip",
     "exi": "application/exi",
     "fdt": "application/fdt+xml",
     "pfr": "application/font-tdpfr",
@@ -1182,7 +1184,7 @@ export const findMimeTypeWithExtension = (ext: string): string | undefined => {
         ext = ext.slice(1);
     }
 
-    return (mimeTypes as any)[ext] ?? undefined;
+    return (mimeTypes as any)[ext.toLowerCase()] ?? undefined;
 };
 
 export const findExtWithMimeType = (type: string): string | undefined => {

@@ -6,24 +6,31 @@
 // ==LICENSE-END==
 
 import "reflect-metadata";
+
+import * as stylesPublications from "readium-desktop/renderer/assets/styles/components/publications.scss";
+import * as stylesSpinner from "readium-desktop/renderer/assets/styles/components/spinnerContainer.scss";
+
+import { OPDS_MEDIA_SCHEME, OPDS_MEDIA_SCHEME__IP_ORIGIN_COVER_IMG } from "readium-desktop/common/streamerProtocol";
+
 import { encodeURIComponent_RFC3986 } from "@r2-utils-js/_utils/http/UrlUtils";
 import * as React from "react";
 import { RandomCustomCovers } from "readium-desktop/common/models/custom-cover";
 import { TPublication } from "readium-desktop/common/type/publication.type";
-import * as stylesPublications from "readium-desktop/renderer/assets/styles/components/publications.scss";
 import {
     formatContributorToString,
 } from "readium-desktop/renderer/common/logics/formatContributor";
 
-import { TranslatorProps, withTranslator } from "./hoc/translator";
 import { PublicationView } from "readium-desktop/common/views/publication";
-import { convertMultiLangStringToString, langStringIsRTL } from "readium-desktop/renderer/common/language-string";
+import { convertMultiLangStringToLangString, langStringIsRTL } from "readium-desktop/common/language-string";
 import { useTranslator } from "../hooks/useTranslator";
+import { connect } from "react-redux";
+import { IRendererCommonRootState } from "readium-desktop/common/redux/states/rendererCommonRootState";
+import { TranslatorProps, withTranslator } from "./hoc/translator";
 // import * as ValidateIcon from "readium-desktop/renderer/assets/icons/validated-icon.svg";
 // import SVG from "./SVG";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface IBaseProps extends TranslatorProps {
+interface IBaseProps {
     publicationViewMaybeOpds: TPublication;
     coverType?: "cover" | "thumbnail" | undefined;
     onClick?: () => void;
@@ -38,7 +45,7 @@ interface IBaseProps extends TranslatorProps {
 // ReturnType<typeof mapStateToProps>
 // ReturnType<typeof mapDispatchToProps>
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface IProps extends IBaseProps {
+interface IProps extends IBaseProps, ReturnType<typeof mapStateToProps>, TranslatorProps {
 }
 
 interface IState {
@@ -96,7 +103,15 @@ class Cover extends React.Component<IProps, IState> {
     }
 
     public render() {
-        const { publicationViewMaybeOpds, translator } = this.props;
+        const { publicationViewMaybeOpds } = this.props;
+
+        let needsSpinner = false;
+
+        const { identifier } = this.props.publicationViewMaybeOpds;
+
+        if (this.props.lcp?.publicationFileLocks[identifier]) {
+            needsSpinner = true;
+        }
 
         // let tagString = "";
         // for (const tag of publicationViewMaybeOpds.tags) {
@@ -117,21 +132,27 @@ class Cover extends React.Component<IProps, IState> {
                     onKeyUp={this.props.onKeyUp}
                     role="presentation"
                     alt={(this.props.imgRadixProp || this.props.onKeyUp) ? this.props.__("publication.cover.img") : ""}
-                    aria-hidden={(this.props.imgRadixProp || this.props.onKeyUp) ? undefined : true}
+                    // aria-hidden={(this.props.imgRadixProp || this.props.onKeyUp) ? undefined : true}
                     ref={this.props.forwardedRef}
                     src={this.state.imgUrl}
                     onError={this.imageOnError}
                     {...this.props.imgRadixProp}
                 />
-                {/* {tagString === "/finished/"  ? 
-                <div className={stylesPublications.corner}><SVG ariaHidden svg={ValidateIcon} /></div> 
+                {/* {tagString === "/finished/"  ?
+                <div className={stylesPublications.corner}><SVG ariaHidden svg={ValidateIcon} /></div>
                 : <></>} */}
+                {
+                needsSpinner
+                ?
+                (<div className={stylesSpinner.spinner_container}><div className={stylesSpinner.spinner}><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div></div>)
+                :
                 <div className={stylesPublications.gradient}></div>
+                }
                 </>
             );
         }
 
-        const authors = formatContributorToString(publicationViewMaybeOpds.authors, translator);
+        const authors = formatContributorToString(publicationViewMaybeOpds.authorsLangString, this.props.locale);
         let colors = publicationViewMaybeOpds.customCover;
         if (!colors) {
             colors = RandomCustomCovers[0];
@@ -139,12 +160,13 @@ class Cover extends React.Component<IProps, IState> {
         const backgroundStyle: React.CSSProperties = {
             backgroundImage: `linear-gradient(${colors.topColor}, ${colors.bottomColor})`,
         };
-        const pubTitleLangStr = convertMultiLangStringToString(translator, (publicationViewMaybeOpds as PublicationView).publicationTitle || publicationViewMaybeOpds.documentTitle);
+        const pubTitleLangStr = convertMultiLangStringToLangString((publicationViewMaybeOpds as PublicationView).publicationTitle || publicationViewMaybeOpds.documentTitle, this.props.locale);
         const pubTitleLang = pubTitleLangStr && pubTitleLangStr[0] ? pubTitleLangStr[0].toLowerCase() : "";
         const pubTitleIsRTL = langStringIsRTL(pubTitleLang);
         const pubTitleStr = pubTitleLangStr && pubTitleLangStr[1] ? pubTitleLangStr[1] : "";
 
         return (
+            <>
             <div style={backgroundStyle} className={stylesPublications.no_img_wrapper}>
                 <div className={stylesPublications.no_img}>
                     <p aria-hidden
@@ -153,11 +175,18 @@ class Cover extends React.Component<IProps, IState> {
                     </p>
                     <p aria-hidden>{authors}</p>
                 </div>
-                {/* {!this.props.publicationViewMaybeOpds.lastReadTimeStamp ? 
-                <div className={stylesPublications.corner}></div> 
-                : <></>} */}
-                <div className={stylesPublications.gradient}></div>
             </div>
+            {/* {!this.props.publicationViewMaybeOpds.lastReadTimeStamp ?
+            <div className={stylesPublications.corner}></div>
+            : <></>} */}
+            {
+            needsSpinner
+            ?
+            (<div className={stylesSpinner.spinner_container}><div className={stylesSpinner.spinner}><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div></div>)
+            :
+            <div className={stylesPublications.gradient}></div>
+            }
+            </>
         );
 
     }
@@ -167,15 +196,21 @@ class Cover extends React.Component<IProps, IState> {
         if (this.state.imgErroredOnce) return;
 
         const b64 = Buffer.from(this.state.imgUrl).toString("base64");
-        const imgUrl = "opds-media://0.0.0.0/" + encodeURIComponent_RFC3986(b64);
+        const imgUrl = OPDS_MEDIA_SCHEME + "://" + OPDS_MEDIA_SCHEME__IP_ORIGIN_COVER_IMG + "/" + encodeURIComponent_RFC3986(b64);
         this.setState({imgUrl, imgErroredOnce: true});
     }
 }
 
-const CoverWithTranslator = withTranslator(Cover);
+const mapStateToProps = (state: IRendererCommonRootState) => ({
+    locale: state.i18n.locale, // refresh
+    lcp: state.lcp,
+});
+
+
+const CoverWithTranslator = connect(mapStateToProps)(withTranslator(Cover));
 export default CoverWithTranslator;
 
-export const CoverWithForwardedRef = React.forwardRef<HTMLImageElement, IProps>(({publicationViewMaybeOpds, coverType, ...props}, forwardedRef) => {
+export const CoverWithForwardedRef = React.forwardRef<HTMLImageElement, IBaseProps>(({publicationViewMaybeOpds, coverType, ...props}, forwardedRef) => {
     const [__] = useTranslator();
 
     return (

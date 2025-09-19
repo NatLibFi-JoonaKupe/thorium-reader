@@ -10,28 +10,38 @@ import * as debug_ from "debug";
 import { clone, flatten } from "ramda";
 import { takeSpawnEvery } from "readium-desktop/common/redux/sagas/takeSpawnEvery";
 import { IReaderRootState } from "readium-desktop/common/redux/states/renderer/readerRootState";
-import { ContentType } from "readium-desktop/utils/contentType";
-import { search } from "readium-desktop/utils/search/search";
-import { ISearchDocument, ISearchResult } from "readium-desktop/utils/search/search.interface";
+import { search } from "readium-desktop/renderer/reader/redux/sagas/search/search";
 // eslint-disable-next-line local-rules/typed-redux-saga-use-typed-effects
-import { all, call, cancel, join, put, take } from "redux-saga/effects";
+import { all, call, cancel, put, take } from "redux-saga/effects";
 import {
-    all as allTyped, delay as delayTyped, fork as forkTyped, select as selectTyped, takeEvery as takeEveryTyped,
-    takeLatest as takeLatestTyped,
+    all as allTyped, delay as delayTyped, select as selectTyped, takeEvery as takeEveryTyped,
+    takeLatest as takeLatestTyped, call as callTyped,
 } from "typed-redux-saga/macro";
 
 import { IRangeInfo } from "@r2-navigator-js/electron/common/selection";
-import { handleLinkLocator } from "@r2-navigator-js/electron/renderer";
-import { Locator as R2Locator } from "@r2-navigator-js/electron/common/locator";
-import { Publication as R2Publication } from "@r2-shared-js/models/publication";
-import { Link } from "@r2-shared-js/models/publication-link";
+// import { r2HandleLinkLocator } from "@r2-navigator-js/electron/renderer";
+import { Locator, Locator as R2Locator } from "@r2-navigator-js/electron/common/locator";
+
 
 import { readerLocalActionHighlights, readerLocalActionSearch } from "../actions";
 import { IHighlightHandlerState } from "readium-desktop/common/redux/states/renderer/highlight";
 
 import debounce from "debounce";
+import { getResourceCacheAll } from "readium-desktop/common/redux/sagas/resourceCache";
+import { ISearchResult } from "readium-desktop/common/redux/states/renderer/search";
 
-const handleLinkLocatorDebounced = debounce(handleLinkLocator, 200);
+// TODO: MASSIVE HACK, needs refactoring!
+interface IWindowHistory extends History {
+    // _readerInstance: Reader | undefined;
+    // _length: number | undefined;
+    _handleLinkLocator: ((locator: R2Locator, isFromOnPopState: boolean) => void) | undefined;
+}
+const windowHistory = window.history as IWindowHistory;
+
+// const handleLinkLocatorDebounced = debounce(r2HandleLinkLocator, 200);
+const handleLinkLocatorDebounced = debounce((location: Locator) => {
+    windowHistory._handleLinkLocator?.(location, false);
+}, 200);
 
 const debug = debug_("readium-desktop:renderer:reader:redux:sagas:search");
 
@@ -52,7 +62,16 @@ function createLocatorLink(href: string, rangeInfo: IRangeInfo): R2Locator {
         href,
         locations: {
             cssSelector: rangeInfo.startContainerElementCssSelector,
-            rangeInfo,
+            caretInfo: {
+                rangeInfo,
+                textFragment: undefined,
+                cleanBefore: "",
+                cleanText: "",
+                cleanAfter: "",
+                rawBefore: "",
+                rawText: "",
+                rawAfter: "",
+            },
         },
     };
 }
@@ -61,19 +80,18 @@ function createLocatorLink(href: string, rangeInfo: IRangeInfo): R2Locator {
 // const searchFct = async (..._arg: any) =>
 //     new Promise<ISearchResult[]>((resolve) => setTimeout(() => resolve([]), 1000));
 
-const searchFct = search;
-
 function* searchRequest(action: readerLocalActionSearch.request.TAction) {
 
     yield call(clearSearch);
 
     const text = action.payload.textSearch;
-    const cacheFromState = yield* selectTyped((state: IReaderRootState) => state.search.cacheArray);
 
-    const searchMap = cacheFromState.map(
+    const cacheDocs = yield* callTyped(getResourceCacheAll);
+
+    const searchMap = cacheDocs.map(
         (v) =>
             call(async () => {
-                return await searchFct(text, v);
+                return await search(text, v);
             }),
     );
 
@@ -90,6 +108,8 @@ function converterSearchResultToHighlightHandlerState(v: ISearchResult, color = 
             group: "search",
             color,
             selectionInfo: {
+                textFragment: undefined,
+
                 cleanBefore: v.cleanBefore,
                 cleanText: v.cleanText,
                 cleanAfter: v.cleanAfter,
@@ -181,88 +201,25 @@ function* searchFocus(action: readerLocalActionSearch.focus.TAction) {
     }
 }
 
-const isFixedLayout = (link: Link, publication: R2Publication): boolean => {
-    if (link && link.Properties) {
-        if (link.Properties.Layout === "fixed") {
-            return true;
-        }
-        if (typeof link.Properties.Layout !== "undefined") {
-            return false;
-        }
-    }
 
-    if (publication &&
-        publication.Metadata &&
-        publication.Metadata.Rendition) {
-        return publication.Metadata.Rendition.Layout === "fixed";
-    }
-    return false;
-};
-
-function* requestPublicationData() {
-
-    const r2Manifest = yield* selectTyped((state: IReaderRootState) => state.reader.info.r2Publication);
-    const manifestUrlR2Protocol = yield* selectTyped(
-        (state: IReaderRootState) => state.reader.info.manifestUrlR2Protocol,
-    );
-    const request = r2Manifest.Spine.map((ln) => call(async () => {
-        const ret: ISearchDocument = {
-            xml: "", // initialized in code below
-            href: ln.Href,
-            contentType: ln.TypeLink ? ln.TypeLink : ContentType.Xhtml,
-            isFixedLayout: isFixedLayout(ln, r2Manifest),
-        };
-        debug(`requestPublicationData ISearchDocument: [${JSON.stringify(ret, null, 4)}]`);
-
-        try {
-            // DEPRECATED API (watch for the inverse function parameter order!):
-            // url.resolve(manifestUrlR2Protocol, ln.Href)
-            const url = new URL(ln.Href, manifestUrlR2Protocol);
-            if (url.pathname.endsWith(".html") || url.pathname.endsWith(".xhtml") || url.pathname.endsWith(".xml")
-                || ln.TypeLink === ContentType.Xhtml
-                || ln.TypeLink === ContentType.Html
-                || ln.TypeLink === ContentType.Xml) {
-
-                const urlStr = url.toString();
-                const res = await fetch(urlStr);
-                if (res.ok) {
-                    const text = await res.text();
-                    ret.xml = text;
-                }
-            }
-        } catch (e) {
-            console.error("requestPublicationData", ln.Href, e);
-        }
-
-        return ret;
-    }));
-
-    const result = yield* allTyped(request);
-    yield put(readerLocalActionSearch.setCache.build(...result));
-}
 
 function* searchEnable(_action: readerLocalActionSearch.enable.TAction) {
 
-    const taskRequest = yield* forkTyped(requestPublicationData);
-
-    const taskSearch = yield* takeLatestTyped(readerLocalActionSearch.request.build,
+    const taskSearch = yield* takeLatestTyped(readerLocalActionSearch.request.ID,
         function*(action: readerLocalActionSearch.request.TAction) {
-            yield join(taskRequest);
-
             yield* delayTyped(100); // refresh load props in Search.tsx (Caused by React18 !?, the load spinner doesn't rotate now !)
 
             yield call(searchRequest, action);
         },
     );
 
-    const taskFound = yield* takeEveryTyped(readerLocalActionSearch.found.build, searchFound);
+    const taskFound = yield* takeEveryTyped(readerLocalActionSearch.found.ID, searchFound);
 
-    const taskFocus = yield* takeEveryTyped(readerLocalActionSearch.focus.build, searchFocus);
+    const taskFocus = yield* takeEveryTyped(readerLocalActionSearch.focus.ID, searchFocus);
 
     // wait the search cancellation
     yield take(readerLocalActionSearch.cancel.ID);
 
-    yield cancel(taskRequest);
     yield cancel(taskSearch);
     yield cancel(taskFocus);
     yield cancel(taskFound);

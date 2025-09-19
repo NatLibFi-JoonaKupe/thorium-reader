@@ -6,7 +6,6 @@
         "leftSlideButton": "სიის მარცხნივ ჩაწევა",
         "mainContent": "ძირითადი შიგთავსი",
         "rightSlideButton": "სიის მარჯვნივ ჩაწევა",
-        "searchBook": "სათაურით ძიება",
         "skipLink": "შიგთავსზე გადახტომა",
         "toolbar": "ინსტრუმენტთა პანელი"
     },
@@ -21,6 +20,7 @@
             "copy": "ასლი",
             "cut": "ამოჭრა",
             "paste": "ჩასმა",
+            "print": "",
             "redo": "აღდგენა",
             "selectAll": "ყველას მონიშვნა",
             "title": "რედაქტირება",
@@ -35,8 +35,9 @@
                         "no": "არა",
                         "yes": "დიახ"
                     },
-                    "message": "გსურს შევინახოთ სესია ?",
-                    "title": "სესიის შენახვა"
+                    "help": "",
+                    "message": "წაკითხული სესიის შენახვა და აღდგენა",
+                    "title": "შევინახო სესია?"
                 }
             }
         },
@@ -50,7 +51,7 @@
     },
     "catalog": {
         "about": {
-            "title": "თორიუმის შესახებ"
+            "title": "{{- appName}}-ის შესახებ (ინტერნეტში)"
         },
         "addBookToLib": "შემოტანა",
         "addTags": "აკრიფეთ იარლიყის სახელი",
@@ -69,13 +70,12 @@
         "emptyTagList": "არ გაქვს არცერთი იარლიყიანი ელ-წიგნი.",
         "entry": {
             "continueReading": "კითხვის გაგრძელება",
-            "continueReadingAudioBooks": "მოსმენის გაგრძელება",
-            "continueReadingDivina": "დივინას გაგრძელება",
-            "continueReadingPdf": "კითხვის გაგრძელება",
             "lastAdditions": "ახლახანს დამატებული"
         },
         "export": "გატანა",
+        "exportAnnotation": "",
         "format": "",
+        "importAnnotation": "",
         "lang": "ენა",
         "lastRead": "",
         "moreInfo": "მეტი ინფორმაცია",
@@ -117,14 +117,30 @@
         "released": "გამოცემის თარიღი",
         "sort": "დალაგება",
         "tag": "",
-        "tagCount": "იარლიყების რაოდენობა",
         "tags": "იარლიყები",
         "update": ""
     },
     "dialog": {
+        "annotations": {
+            "descAuthor": "",
+            "descCreator": "",
+            "descList": "",
+            "descNewer": "",
+            "descOlder": "",
+            "descTitle": "",
+            "importAll": "",
+            "importWithoutConflict": "",
+            "origin": "",
+            "title": ""
+        },
         "cancel": "გადაფიქრება",
+        "deleteAnnotations": "",
+        "deleteAnnotationsText": "",
+        "deleteBookmarks": "",
+        "deleteBookmarksText": "",
         "deleteFeed": "ნამდვილად გსურთ ამ კატალოგის წაშლა ?",
         "deletePublication": "ნამდვილად გსურთ ამ პუბლიკაციის წაშლა ?",
+        "deletePublicationWithNotes": "",
         "import": "ნამდვილად გსურთ ამ ფაილების შემოტანა :",
         "importError": "მოხდა შეცდომა, გადაამოწმეთ ფაილის გაფართოება ({{acceptedExtension}})",
         "renew": "ნამდვილად გსურთ ამ პუბლიკაციის ლიცენზიის განახლება?",
@@ -157,21 +173,30 @@
     },
     "library": {
         "lcp": {
-            "hint": "(მინიშნება: {{- hint}})",
+            "hint": "მინიშნება:",
+            "open": "",
             "password": "კოდური ფრაზა",
-            "sentence": "ეს პუბლიკაცია საჭიროებს LCP კოდურ ფრაზას გასახსნელად: ",
-            "urlHint": "დაგავიწყდა კოდური ფრაზა? აქ მოიძიე დახმარება",
+            "sentence": "ამ პუბლიკაციას გასახსნელად LCP საკვანძო ფრაზა სჭირდება",
+            "urlHint": "დაგავიწყდათ საკვანძო ფრაზა? მხარდაჭერის მისაღებად დააწკაპუნეთ აქ.",
             "whatIsLcp?": "",
             "whatIsLcpInfoDetails": "",
             "whatIsLcpInfoDetailsLink": ""
         }
     },
     "message": {
+        "annotations": {
+            "alreadyImported": "",
+            "emptyFile": "",
+            "errorParsing": "",
+            "noBelongTo": "",
+            "nothing": "",
+            "success": ""
+        },
         "download": {
             "error": "{{- title}} გადმოტვირთვა უშედეგოდ დასრულდა: [{{- err}}]"
         },
         "import": {
-            "alreadyImport": "{{- title}} უკვე შემოტანილია",
+            "alreadyImport": "{{- title}} უკვე შემოტანილია.",
             "fail": "{{- path}} მისამართის შემოტანა უშედეგოდ დასრულდა. {{- err}}",
             "success": "{{- title}} შემოტანა წარმატებით დასრულდა."
         },
@@ -209,7 +234,7 @@
             "error": "OPDS წყარო მიუწვდომელია",
             "noInternet": "არაა ინტერნეტი",
             "noInternetMessage": "სცადეთ: შეამოწმეთ ინტერნეტის კაბელი, მოდემი, როუთერი ან ვაიფაი",
-            "reject": "სამწუხაროდ მოულოდნელ შეცდომას ჰქონდა ადგილი OPDS წყაროს დამუშავებისას",
+            "reject": "უკაცრავად. აღმოჩენილია მოულოდნელი შეცდომა!",
             "timeout": "დაფიქსირდა ქსელის შესვენება, სცადეთ კიდევ მოგვიანებით"
         },
         "next": "მომდევნო",
@@ -222,6 +247,297 @@
             "url": ""
         },
         "whatIsOpds": ""
+    },
+    "publ-a11y-display-guide": {
+        "accessibility-summary": {
+            "accessibility-summary-title": ""
+        },
+        "additional-accessibility-information": {
+            "additional-accessibility-information-aria": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-audio-descriptions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-braille": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-full-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-foreground-and-background-audio": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-text-and-background": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-large-print": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-page-breaks": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-sign-language": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-graphics": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-objects": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-text-to-speech-hinting": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-title": ""
+        },
+        "conformance": {
+            "conformance-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-certifier": {
+                "compact": ""
+            },
+            "conformance-certifier-credentials": {
+                "compact": ""
+            },
+            "conformance-details-certifier-report": {
+                "compact": ""
+            },
+            "conformance-details-claim": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-0": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-0": {
+                "compact": ""
+            },
+            "conformance-details-wcag-2-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-2": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-no": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-title": "",
+            "conformance-unknown-standard": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "hazards": {
+            "hazards-flashing": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-title": "",
+            "hazards-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "navigation": {
+            "navigation-index": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-page-navigation": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-structural": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-title": "",
+            "navigation-toc": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "rich-content": {
+            "rich-content-accessible-chemistry-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-chemistry-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-described": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-closed-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-extended": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-open-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-title": "",
+            "rich-content-transcript": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "ways-of-reading": {
+            "ways-of-reading-nonvisual-reading-alt-text": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-not-fully": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-readable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-complementary": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-only": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-synchronized": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-title": "",
+            "ways-of-reading-visual-adjustments-modifiable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-visual-adjustments-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        }
     },
     "publication": {
         "accessibility": {
@@ -260,8 +576,8 @@
         },
         "author": "",
         "cancelledLcp": "ამ წიგნის წაკითხვა შეუძლებელია რადგან LCP ლიცენზია გაუქმებულია.",
-        "certificateRevoked": "სერტიფიკატი ანულირებულია",
-        "certificateSignatureInvalid": "სერტიფიკატის ხელმოწერა არასწორია",
+        "certificateRevoked": "LCP ლიცენზიის სერტიფიკატი გაუქმებულია.",
+        "certificateSignatureInvalid": "არასწორი LCP ლიცენზიის სერტიფიკატის ხელმოწერა.",
         "cover": {
             "img": "ყდის სურათი"
         },
@@ -270,16 +586,18 @@
         "duration": {
             "title": "ხანგრძლივობა"
         },
+        "encryptedNoLicense": "",
         "expired": "",
         "expiredLcp": "ამ წიგნის წაკითხვა შეუძლებელია რადგან LCP ლიცენზიას ვადა გაუვიდა.",
+        "incorrectPassphrase": "",
         "lcpEnd": "დასასრული",
         "lcpRightsCopy": "ასლისთვის სიმბოლოების რაოდენობა",
         "lcpRightsPrint": "ბეჭდისთვის ნებადართული გვერდების რაოდენობა",
         "lcpStart": "დაწყება",
         "licenceLCP": "",
-        "licenseOutOfDate": "ლიცენზია მოძველდა",
-        "licenseSignatureDateInvalid": "ლიცენზიის ხელმოწერის თარიღი არასწორია",
-        "licenseSignatureInvalid": "ლიცენზიის ხელმოწერა არასწორია",
+        "licenseCertificateDateInvalid": "ვადაგასული LCP მომწოდებლის სერტიფიკატი. ({{- dateTime}})",
+        "licenseOutOfDate": "მოძველებული LCP ლიცენზია.",
+        "licenseSignatureInvalid": "არასწორი LCP ლიცენზიის ხელმოწერა.",
         "licensed": "",
         "markAsRead": "",
         "notStarted": "",
@@ -297,19 +615,51 @@
         "seeMore": "მეტის ნახვა",
         "timeLeft": "",
         "title": "",
-        "userKeyCheckInvalid": "კოდური ფრაზა არასწორია"
+        "userKeyCheckInvalid": "არასწორი საკვანძო ფრაზა."
     },
     "reader": {
         "annotations": {
             "Color": "",
             "addNote": "",
             "advancedMode": "",
+            "annotationsExport": {
+                "description": "",
+                "title": ""
+            },
             "annotationsOptions": "",
+            "date": "",
+            "export": "",
+            "filter": {
+                "all": "",
+                "filterByColor": "",
+                "filterByCreator": "",
+                "filterByDrawtype": "",
+                "filterByTag": "",
+                "filterOptions": "",
+                "none": ""
+            },
+            "hide": "",
             "highlight": "",
             "noSelectionToast": "",
+            "note": "",
             "quickAnnotations": "",
             "saveNote": "",
-            "toggleMarginMarks": ""
+            "sorting": {
+                "lastcreated": "",
+                "lastmodified": "",
+                "progression": "",
+                "sortingOptions": ""
+            },
+            "toggleMarginMarks": "",
+            "type": {
+                "outline": "",
+                "solid": "",
+                "strikethrough": "",
+                "underline": ""
+            }
+        },
+        "bookmarks": {
+            "index": ""
         },
         "divina": {
             "mute": "გაჩუმება",
@@ -317,6 +667,13 @@
         },
         "fxl": {
             "fit": ""
+        },
+        "goToContent": "",
+        "imgViewer": {
+            "title": "",
+            "zoomIn": "",
+            "zoomOut": "",
+            "zoomReset": ""
         },
         "marks": {
             "annotations": "ანოტაციები",
@@ -334,6 +691,10 @@
             "activate": "ხმამაღლა კითხვის გააქტიურება",
             "captions": "სუბტიტრები / სუფთა ხედი",
             "captionsDescription": "",
+            "disableContinuousPlay": "",
+            "disableContinuousPlayDescription": "",
+            "ignoreAndUseTTS": "",
+            "ignoreAndUseTTSDescription": "",
             "next": "მომდევნო ტექსტის ამოკითხვა",
             "pause": "ტექსტის მეტყველების დაპაუზება",
             "play": "ტექსტის მეტყველების ჩართვა",
@@ -345,17 +706,19 @@
             "title": "ტექსტის მეტყველება"
         },
         "navigation": {
+            "ZenModeExit": "",
+            "ZenModeTitle": "",
             "annotationTitle": "",
             "backHomeTitle": "წიგნების თაროში დაბრუნება",
             "bookmarkTitle": "სანიშნე",
             "currentPage": "წინა გვერდი: {{- current}}",
             "currentPageTotal": "მიმდინარე გვერდი: {{- current}}/{{- total}}",
             "detachWindowTitle": "მანახე ბიბლიოთეკა / წიგნების კარადის ფანჯარა",
-            "fullscreenTitle": "სრულ ეკრანზე გახსნა",
             "goTo": "გადადით",
             "goToError": "ამ გვერდის წყვეტა არ არსებობს",
             "goToPlaceHolder": "შეიტანეთ გვერდის ნომერი",
             "goToTitle": "გადადით გვერდზე",
+            "history": "",
             "historyNext": "",
             "historyPrevious": "",
             "infoTitle": "ინფორმაცია",
@@ -363,7 +726,21 @@
             "openTableOfContentsTitle": "ნავიგაცია",
             "page": "",
             "pdfscalemode": "გვერდზე მორგება ან სიგანე",
+            "print": "",
+            "printDisabled": "",
+            "screenNext": "",
+            "screenPrevious": "",
             "settingsTitle": "პარამეტრები"
+        },
+        "notes": {
+            "colors": {
+                "cyan": "",
+                "green": "",
+                "orange": "",
+                "purple": "",
+                "red": "",
+                "yellow": ""
+            }
         },
         "picker": {
             "search": {
@@ -377,6 +754,24 @@
             },
             "searchTitle": "ძიება:"
         },
+        "print": {
+            "descriptionLcpCount": "",
+            "descriptionLcpPrintable": "",
+            "howTo": "",
+            "lcpInfo": "",
+            "noPagesLcpLimitReached": "",
+            "noPrintablePages": "",
+            "pageHelpInfo": "",
+            "pageHelpInfo1": "",
+            "pageHelpInfo2": "",
+            "pageHelpInfo3": "",
+            "pageHelpInfo4": "",
+            "pages": "",
+            "preview": "",
+            "print": "",
+            "printablePages": "",
+            "title": ""
+        },
         "settings": {
             "column": {
                 "auto": "ავტომატური",
@@ -384,6 +779,7 @@
                 "title": "სვეტები",
                 "two": "2 სვეტი"
             },
+            "customFontSelected": "",
             "customizeReader": "",
             "disabled": "",
             "display": "გამოსახულება",
@@ -398,9 +794,11 @@
             "letterSpacing": "ასოების დაშორება",
             "lineSpacing": "ხაზების დაშორება",
             "margin": "მინდორი",
+            "mathjax": "",
             "noFootnotes": "სქოლიოს გათიშვა",
             "noRTLFlip": "",
             "noRuby": "",
+            "noTemporaryNavTargetOutline": "",
             "paginated": "დანომრილი",
             "paraSpacing": "პარაგრაფების დაშორება",
             "pdfZoom": {
@@ -415,6 +813,16 @@
                     "width": "გვერდის სიგანე"
                 },
                 "title": "მოახლოება"
+            },
+            "preset": {
+                "apply": "",
+                "applyDetails": "",
+                "detail": "",
+                "reset": "",
+                "resetDetails": "",
+                "save": "",
+                "saveDetails": "",
+                "title": ""
             },
             "preview": "",
             "reduceMotion": "მოძრაობის შემცირება",
@@ -445,8 +853,9 @@
         },
         "tts": {
             "activate": "ტექსტის მეტყველების გააქტიურება",
-            "default": "ხმა: სისტემის ნაგულისხმევი",
+            "language": "",
             "next": "მომდევნო ტექსტის წარმოთქმა",
+            "options": "",
             "pause": "ტექსტის მეტყველების დაპაუზება",
             "play": "ტექსტის მეტყველების დაკვრა",
             "previous": "წინა ტექსტის წარმოთქმა",
@@ -458,7 +867,17 @@
         }
     },
     "settings": {
+        "annotationCreator": {
+            "creator": "",
+            "help": "",
+            "name": "",
+            "organization": "",
+            "person": "",
+            "type": ""
+        },
         "auth": {
+            "help": "",
+            "title": "",
             "wipeData": "აუტენტიფიკაციის მონაცემების გასუფთავება"
         },
         "keyboard": {
@@ -467,17 +886,250 @@
             "disclaimer": "",
             "editUserJson": "მომხმარებლის ფაილის რედაქტირება...",
             "keyboardShortcuts": "კლავიატურით სწრაფი გამოძახება",
+            "list": {
+                "AddBookmarkWithLabel": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreate": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreateQuick": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsToggleMargin": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPlayPause": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioStop": {
+                    "description": "",
+                    "name": ""
+                },
+                "CloseReader": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomIn": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomOut": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomReset": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMain": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMainDeep": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderGotoPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigation": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationAnnotations": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationBookmarks": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationTOC": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderSettings": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusToolbar": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToBegin": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToEnd": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfo": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "Print": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SpeakReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleBookmark": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleReaderFullscreen": {
+                    "description": "",
+                    "name": ""
+                }
+            },
             "loadUserJson": "მომხმარებლის ფაილიდან ჩატვირთვა",
+            "noShortcutFound": "",
             "resetDefaults": "გადაყენება (ნაგულისხმევის თავიდან ჩატვირთვა)",
-            "save": "შენახვა"
+            "save": "შენახვა",
+            "searchPlaceholder": ""
         },
         "language": {
             "languageChoice": "ენის არჩევანი"
         },
+        "library": {
+            "enableAPIAPP": "",
+            "title": ""
+        },
+        "note": {
+            "export": {
+                "applyDefaultTemplate": "",
+                "enableCheckbox": "",
+                "overrideHTMLTemplate": ""
+            }
+        },
         "session": {
-            "no": "გამორთულია",
-            "title": "სესიის შენახვა",
-            "yes": "ჩართულია"
+            "title": "სესიის შენახვა"
         },
         "tabs": {
             "appearance": "",
@@ -490,6 +1142,29 @@
             "description": "",
             "light": "",
             "title": ""
+        }
+    },
+    "tts": {
+        "highlight": {
+            "mainColor": "",
+            "maskBlockWordOutline": "",
+            "maskBlockWordSolidBackground": "",
+            "maskBlockWordUnderline": "",
+            "maskWordOutline": "",
+            "maskWordSolidBackground": "",
+            "maskWordUnderline": "",
+            "outlineWordOutline": "",
+            "outlineWordSolidBackground": "",
+            "outlineWordUnderline": "",
+            "preview": "",
+            "solidBackgroundWordOutline": "",
+            "solidBackgroundWordSolidBackground": "",
+            "solidBackgroundWordUnderline": "",
+            "style": "",
+            "underlineWordOutline": "",
+            "underlineWordSolidBackground": "",
+            "underlineWordUnderline": "",
+            "wordColor": ""
         }
     },
     "wizard": {

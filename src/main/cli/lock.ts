@@ -26,7 +26,6 @@ export function lockInstance() {
         app.on("will-finish-launching", () => {
 
             // https://api.archivelab.org/books/letters_to_friend_2004_librivox/opds_audio_manifest
-            // tslint:disable-next-line: max-line-length
             // https://streamer.kvmai.com/pub/aHR0cHM6Ly9uZ25peC1zZXJ2ZXItbmNuZGFkd3M0cS1leS5hLnJ1bi5hcHAvcHVibGljL0FjY2Vzc2libGVfRVBVQl8zLmVwdWI=/manifest.json
             //
             // https://w3c.github.io/publ-tests/test_reports/manifest_processing/
@@ -87,7 +86,7 @@ export function lockInstance() {
             // https://github.com/edrlab/thorium-reader/pull/1573#issuecomment-1003042325
             try {
                 const libraryAppWindow = getLibraryWindowFromDi();
-                if (libraryAppWindow) {
+                if (libraryAppWindow && !libraryAppWindow.isDestroyed() && !libraryAppWindow.webContents.isDestroyed()) {
                     if (libraryAppWindow.isMinimized()) {
                         libraryAppWindow.restore();
                     }

@@ -6,7 +6,6 @@
         "leftSlideButton": "Плъзни списъка наляво",
         "mainContent": "главно съдържание",
         "rightSlideButton": "Плъзни списъка надясно",
-        "searchBook": "Търси по заглавие",
         "skipLink": "Преминете към съдържанието",
         "toolbar": "лента с инструменти"
     },
@@ -21,6 +20,7 @@
             "copy": "Копиране",
             "cut": "Изрязване",
             "paste": "Поставяне",
+            "print": "",
             "redo": "Връщане",
             "selectAll": "Изберане на всички",
             "title": "Редактиране",
@@ -35,6 +35,7 @@
                         "no": "Не",
                         "yes": "Да"
                     },
+                    "help": "",
                     "message": "Искате ли да запазите сесията ?",
                     "title": "Запази сесията"
                 }
@@ -69,13 +70,12 @@
         "emptyTagList": "Нямате маркирана електронна книга.",
         "entry": {
             "continueReading": "Възобнови четенето",
-            "continueReadingAudioBooks": "Възобнови слушането",
-            "continueReadingDivina": "Възобнови divina",
-            "continueReadingPdf": "Възобнови PDF",
             "lastAdditions": "Наскоро добавени"
         },
         "export": "Експортиране",
+        "exportAnnotation": "",
         "format": "Форматиране",
+        "importAnnotation": "",
         "lang": "Език",
         "lastRead": "Последно четено",
         "moreInfo": "Подробности за книгата",
@@ -117,14 +117,30 @@
         "released": "Публикувано на",
         "sort": "Сортирай по",
         "tag": "",
-        "tagCount": "Брой маркери",
         "tags": "Маркери",
         "update": "Редактирай"
     },
     "dialog": {
+        "annotations": {
+            "descAuthor": "",
+            "descCreator": "",
+            "descList": "",
+            "descNewer": "",
+            "descOlder": "",
+            "descTitle": "",
+            "importAll": "",
+            "importWithoutConflict": "",
+            "origin": "",
+            "title": ""
+        },
         "cancel": "Отказ",
+        "deleteAnnotations": "",
+        "deleteAnnotationsText": "",
+        "deleteBookmarks": "",
+        "deleteBookmarksText": "",
         "deleteFeed": "Наистина ли искате да изтриете този каталог?",
         "deletePublication": "Наистина ли искате да изтриете тази книга?",
+        "deletePublicationWithNotes": "",
         "import": "Наистина ли искате да добавите тези файлове:",
         "importError": "възникна грешка, проверете файловото разширение ({{acceptedExtension}})",
         "renew": "Наистина ли искате да подновите лиценза за тази книга?",
@@ -157,21 +173,30 @@
     },
     "library": {
         "lcp": {
-            "hint": "(Подсказка: {{- hint}})",
+            "hint": "Подсказка:",
+            "open": "Отвори",
             "password": "Парола",
             "sentence": "Тази публикация се нуждае от LCP парола, за да бъде отворена: ",
-            "urlHint": "Забравили сте паролата си? Намерете помощ тук",
+            "urlHint": "Забравили сте паролата си? Намерете помощ тук.",
             "whatIsLcp?": "",
             "whatIsLcpInfoDetails": "",
             "whatIsLcpInfoDetailsLink": ""
         }
     },
     "message": {
+        "annotations": {
+            "alreadyImported": "",
+            "emptyFile": "",
+            "errorParsing": "",
+            "noBelongTo": "",
+            "nothing": "",
+            "success": ""
+        },
         "download": {
             "error": "Изтеглянето на {{- title}} е неуспешно: [{{- err}}]"
         },
         "import": {
-            "alreadyImport": "{{- title}} вече е била добавена",
+            "alreadyImport": "{{- title}} вече е била добавена.",
             "fail": "Добавянето на {{- path}} се провали. {{- err}}",
             "success": "Добавянето на {{- title}} завърши."
         },
@@ -223,6 +248,297 @@
         },
         "whatIsOpds": ""
     },
+    "publ-a11y-display-guide": {
+        "accessibility-summary": {
+            "accessibility-summary-title": ""
+        },
+        "additional-accessibility-information": {
+            "additional-accessibility-information-aria": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-audio-descriptions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-braille": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-full-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-foreground-and-background-audio": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-text-and-background": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-large-print": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-page-breaks": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-sign-language": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-graphics": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-objects": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-text-to-speech-hinting": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-title": ""
+        },
+        "conformance": {
+            "conformance-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-certifier": {
+                "compact": ""
+            },
+            "conformance-certifier-credentials": {
+                "compact": ""
+            },
+            "conformance-details-certifier-report": {
+                "compact": ""
+            },
+            "conformance-details-claim": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-0": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-0": {
+                "compact": ""
+            },
+            "conformance-details-wcag-2-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-2": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-no": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-title": "",
+            "conformance-unknown-standard": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "hazards": {
+            "hazards-flashing": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-title": "",
+            "hazards-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "navigation": {
+            "navigation-index": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-page-navigation": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-structural": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-title": "",
+            "navigation-toc": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "rich-content": {
+            "rich-content-accessible-chemistry-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-chemistry-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-described": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-closed-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-extended": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-open-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-title": "",
+            "rich-content-transcript": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "ways-of-reading": {
+            "ways-of-reading-nonvisual-reading-alt-text": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-not-fully": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-readable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-complementary": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-only": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-synchronized": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-title": "",
+            "ways-of-reading-visual-adjustments-modifiable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-visual-adjustments-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        }
+    },
     "publication": {
         "accessibility": {
             "accessModeSufficient": {
@@ -260,8 +576,8 @@
         },
         "author": "Автор",
         "cancelledLcp": "Тази книга не може да бъде прочетена, защото лицензът за LCP е анулиран.",
-        "certificateRevoked": "Сертификатът е анулиран",
-        "certificateSignatureInvalid": "Ключа за сертификата е невалиден",
+        "certificateRevoked": "Сертификатът е анулиран.",
+        "certificateSignatureInvalid": "Ключа за сертификата е невалиден.",
         "cover": {
             "img": "корица"
         },
@@ -270,16 +586,18 @@
         "duration": {
             "title": "Продължителност"
         },
+        "encryptedNoLicense": "",
         "expired": "",
         "expiredLcp": "Тази книга не може да бъде прочетена, защото лицензът за LCP е изтекъл.",
+        "incorrectPassphrase": "",
         "lcpEnd": "Край",
         "lcpRightsCopy": "Копиране на символи",
         "lcpRightsPrint": "Печат на страници",
         "lcpStart": "Начало",
         "licenceLCP": "",
-        "licenseOutOfDate": "Изтекъл срок на лиценза",
-        "licenseSignatureDateInvalid": "Датата на ключа за лиценза е невалидна",
-        "licenseSignatureInvalid": "Ключа за лиценза е невалиден",
+        "licenseCertificateDateInvalid": "Датата на ключа за лиценза е невалидна. ({{- dateTime}})",
+        "licenseOutOfDate": "Изтекъл срок на лиценза.",
+        "licenseSignatureInvalid": "Ключа за лиценза е невалиден.",
         "licensed": "",
         "markAsRead": "",
         "notStarted": "",
@@ -297,19 +615,51 @@
         "seeMore": "Виж повече",
         "timeLeft": "",
         "title": "Title",
-        "userKeyCheckInvalid": "Паролата е невалидна"
+        "userKeyCheckInvalid": "Паролата е невалидна."
     },
     "reader": {
         "annotations": {
             "Color": "",
             "addNote": "",
             "advancedMode": "",
+            "annotationsExport": {
+                "description": "",
+                "title": ""
+            },
             "annotationsOptions": "",
+            "date": "",
+            "export": "",
+            "filter": {
+                "all": "",
+                "filterByColor": "",
+                "filterByCreator": "",
+                "filterByDrawtype": "",
+                "filterByTag": "",
+                "filterOptions": "",
+                "none": ""
+            },
+            "hide": "",
             "highlight": "",
             "noSelectionToast": "",
+            "note": "",
             "quickAnnotations": "",
             "saveNote": "",
-            "toggleMarginMarks": ""
+            "sorting": {
+                "lastcreated": "",
+                "lastmodified": "",
+                "progression": "",
+                "sortingOptions": ""
+            },
+            "toggleMarginMarks": "",
+            "type": {
+                "outline": "",
+                "solid": "",
+                "strikethrough": "",
+                "underline": ""
+            }
+        },
+        "bookmarks": {
+            "index": ""
         },
         "divina": {
             "mute": "заглуши звука",
@@ -317,6 +667,13 @@
         },
         "fxl": {
             "fit": ""
+        },
+        "goToContent": "",
+        "imgViewer": {
+            "title": "",
+            "zoomIn": "",
+            "zoomOut": "",
+            "zoomReset": ""
         },
         "marks": {
             "annotations": "Анотации",
@@ -334,6 +691,10 @@
             "activate": "Активирай Четене на глас",
             "captions": "Надписи / чист изглед",
             "captionsDescription": "",
+            "disableContinuousPlay": "",
+            "disableContinuousPlayDescription": "",
+            "ignoreAndUseTTS": "",
+            "ignoreAndUseTTSDescription": "",
             "next": "Следващ",
             "pause": "Пауза",
             "play": "Пусни Четене на глас",
@@ -345,17 +706,19 @@
             "title": "Четене на глас"
         },
         "navigation": {
+            "ZenModeExit": "",
+            "ZenModeTitle": "",
             "annotationTitle": "",
             "backHomeTitle": "обратно към лавицата с книги",
             "bookmarkTitle": "отметка",
             "currentPage": "Текуща страница: {{- current}}",
             "currentPageTotal": "Текуща страница: {{- current}}/{{- total}}",
             "detachWindowTitle": "показване на прозореца на библиотеката/лавицата с книги",
-            "fullscreenTitle": "отвори на цял екран",
             "goTo": "Иди на",
             "goToError": "Това местоположение не съществува",
             "goToPlaceHolder": "Въведи номер на страница",
             "goToTitle": "Иди на страница",
+            "history": "",
             "historyNext": "Прескочи напред",
             "historyPrevious": "Прескочи назад",
             "infoTitle": "Информация",
@@ -363,7 +726,21 @@
             "openTableOfContentsTitle": "навигация",
             "page": "",
             "pdfscalemode": "Побиране в екрана или в ширината му",
+            "print": "",
+            "printDisabled": "",
+            "screenNext": "",
+            "screenPrevious": "",
             "settingsTitle": "настройки"
+        },
+        "notes": {
+            "colors": {
+                "cyan": "",
+                "green": "",
+                "orange": "",
+                "purple": "",
+                "red": "",
+                "yellow": ""
+            }
         },
         "picker": {
             "search": {
@@ -377,6 +754,24 @@
             },
             "searchTitle": "Търси:"
         },
+        "print": {
+            "descriptionLcpCount": "",
+            "descriptionLcpPrintable": "",
+            "howTo": "",
+            "lcpInfo": "",
+            "noPagesLcpLimitReached": "",
+            "noPrintablePages": "",
+            "pageHelpInfo": "",
+            "pageHelpInfo1": "",
+            "pageHelpInfo2": "",
+            "pageHelpInfo3": "",
+            "pageHelpInfo4": "",
+            "pages": "",
+            "preview": "",
+            "print": "",
+            "printablePages": "",
+            "title": ""
+        },
         "settings": {
             "column": {
                 "auto": "Автоматично",
@@ -384,6 +779,7 @@
                 "title": "Колони",
                 "two": "2 кол."
             },
+            "customFontSelected": "",
             "customizeReader": "",
             "disabled": "",
             "display": "Екран",
@@ -398,9 +794,11 @@
             "letterSpacing": "Разстояние между буквите",
             "lineSpacing": "Разстояние между редовете",
             "margin": "Отстъпи",
+            "mathjax": "",
             "noFootnotes": "Деактивирайте бележките под линия",
             "noRTLFlip": "",
             "noRuby": "",
+            "noTemporaryNavTargetOutline": "",
             "paginated": "Страниран",
             "paraSpacing": "Разстояние между параграфите",
             "pdfZoom": {
@@ -415,6 +813,16 @@
                     "width": "в ширината на страницата"
                 },
                 "title": "Мащабиране"
+            },
+            "preset": {
+                "apply": "",
+                "applyDetails": "",
+                "detail": "",
+                "reset": "",
+                "resetDetails": "",
+                "save": "",
+                "saveDetails": "",
+                "title": ""
             },
             "preview": "",
             "reduceMotion": "Намали движението",
@@ -445,8 +853,9 @@
         },
         "tts": {
             "activate": "Активирай четене на глас",
-            "default": "Глас: системен по подразбиране",
+            "language": "",
             "next": "Следващ",
+            "options": "",
             "pause": "Пауза",
             "play": "Стартирай",
             "previous": "Предишен",
@@ -458,7 +867,17 @@
         }
     },
     "settings": {
+        "annotationCreator": {
+            "creator": "",
+            "help": "",
+            "name": "",
+            "organization": "",
+            "person": "",
+            "type": ""
+        },
         "auth": {
+            "help": "",
+            "title": "",
             "wipeData": "Изтриване на данните за удостоверяване"
         },
         "keyboard": {
@@ -467,17 +886,250 @@
             "disclaimer": "",
             "editUserJson": "Редактиране на потребителски файл...",
             "keyboardShortcuts": "Бързи клавиши",
+            "list": {
+                "AddBookmarkWithLabel": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreate": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreateQuick": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsToggleMargin": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPlayPause": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioStop": {
+                    "description": "",
+                    "name": ""
+                },
+                "CloseReader": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomIn": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomOut": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomReset": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMain": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMainDeep": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderGotoPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigation": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationAnnotations": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationBookmarks": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationTOC": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderSettings": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusToolbar": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToBegin": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToEnd": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfo": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "Print": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SpeakReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleBookmark": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleReaderFullscreen": {
+                    "description": "",
+                    "name": ""
+                }
+            },
             "loadUserJson": "Зареждане от потребителски файл",
+            "noShortcutFound": "",
             "resetDefaults": "Нулирай (Зареди по подразбиране)",
-            "save": "Запис"
+            "save": "Запис",
+            "searchPlaceholder": ""
         },
         "language": {
             "languageChoice": "Избор на език"
         },
+        "library": {
+            "enableAPIAPP": "",
+            "title": ""
+        },
+        "note": {
+            "export": {
+                "applyDefaultTemplate": "",
+                "enableCheckbox": "",
+                "overrideHTMLTemplate": ""
+            }
+        },
         "session": {
-            "no": "Деактивирай",
-            "title": "Запиши сесията",
-            "yes": "Активирай"
+            "title": "Запиши сесията"
         },
         "tabs": {
             "appearance": "",
@@ -490,6 +1142,29 @@
             "description": "",
             "light": "",
             "title": ""
+        }
+    },
+    "tts": {
+        "highlight": {
+            "mainColor": "",
+            "maskBlockWordOutline": "",
+            "maskBlockWordSolidBackground": "",
+            "maskBlockWordUnderline": "",
+            "maskWordOutline": "",
+            "maskWordSolidBackground": "",
+            "maskWordUnderline": "",
+            "outlineWordOutline": "",
+            "outlineWordSolidBackground": "",
+            "outlineWordUnderline": "",
+            "preview": "",
+            "solidBackgroundWordOutline": "",
+            "solidBackgroundWordSolidBackground": "",
+            "solidBackgroundWordUnderline": "",
+            "style": "",
+            "underlineWordOutline": "",
+            "underlineWordSolidBackground": "",
+            "underlineWordUnderline": "",
+            "wordColor": ""
         }
     },
     "wizard": {

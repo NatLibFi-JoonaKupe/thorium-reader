@@ -15,7 +15,6 @@ import { combineReducers } from "redux";
 
 import { publicationActions, winActions } from "../actions";
 import { publicationActions as publicationActionsFromCommonAction } from "readium-desktop/common/redux/actions";
-import { lcpReducer } from "./lcp";
 import { readerDefaultConfigReducer } from "../../../common/redux/reducers/reader/defaultConfig";
 import { winRegistryReaderReducer } from "./win/registry/reader";
 import { winSessionLibraryReducer } from "./win/session/library";
@@ -29,6 +28,10 @@ import { themeReducer } from "readium-desktop/common/redux/reducers/theme";
 import { versionUpdateReducer } from "readium-desktop/common/redux/reducers/version-update";
 import { wizardReducer } from "readium-desktop/common/redux/reducers/wizard";
 import { versionReducer } from "readium-desktop/common/redux/reducers/version";
+import { creatorReducer } from "readium-desktop/common/redux/reducers/creator";
+import { settingsReducer } from "readium-desktop/common/redux/reducers/settings";
+import { lcpReducer } from "readium-desktop/common/redux/reducers/lcp";
+import { noteExportReducer } from "readium-desktop/common/redux/reducers/noteExport";
 
 export const rootReducer = combineReducers({ // RootState
     versionUpdate: versionUpdateReducer,
@@ -101,4 +104,7 @@ export const rootReducer = combineReducers({ // RootState
     }),
     version: versionReducer,
     wizard: wizardReducer,
+    settings: settingsReducer,
+    creator: creatorReducer,
+    noteExport: noteExportReducer,
 });

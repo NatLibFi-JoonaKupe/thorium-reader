@@ -8,12 +8,12 @@
 import * as ramda from "ramda";
 // import { ActionWithSender } from "readium-desktop/common/models/sync";
 import { readerActions } from "readium-desktop/common/redux/actions";
-import { IReaderRootState, IReaderStateReader } from "readium-desktop/common/redux/states/renderer/readerRootState";
+import { IReaderRootState, IReaderStateReaderPersistence } from "readium-desktop/common/redux/states/renderer/readerRootState";
 import { UnknownAction, Dispatch, Middleware, MiddlewareAPI } from "redux";
 
 const dispatchSetReduxState = (
     store: MiddlewareAPI<Dispatch<UnknownAction>, IReaderRootState>,
-    readerState: Partial<IReaderStateReader>,
+    readerState: Partial<IReaderStateReaderPersistence>,
 ) => {
 
     const state = store.getState();
@@ -33,7 +33,7 @@ export const reduxPersistMiddleware: Middleware
 
                 const nextState = store.getState();
 
-                const readerState: Partial<IReaderStateReader> = {};
+                const readerState: Partial<IReaderStateReaderPersistence> = {};
                 let dispatchFlag = false;
                 if (!ramda.equals(prevState.reader.config, nextState.reader.config)) {
 
@@ -43,11 +43,6 @@ export const reduxPersistMiddleware: Middleware
                 if (!ramda.equals(prevState.reader.locator, nextState.reader.locator)) {
 
                     readerState.locator = nextState.reader.locator;
-                    dispatchFlag = true;
-                }
-                if (!ramda.equals(prevState.reader.bookmark, nextState.reader.bookmark)) {
-
-                    readerState.bookmark = nextState.reader.bookmark;
                     dispatchFlag = true;
                 }
                 if (!ramda.equals(prevState.reader.divina, nextState.reader.divina)) {
@@ -60,14 +55,19 @@ export const reduxPersistMiddleware: Middleware
                     readerState.disableRTLFlip = nextState.reader.disableRTLFlip;
                     dispatchFlag = true;
                 }
-                if (!ramda.equals(prevState.reader.annotation, nextState.reader.annotation)) {
+                if (!ramda.equals(prevState.reader.note, nextState.reader.note)) {
 
-                    readerState.annotation = nextState.reader.annotation;
+                    readerState.note = nextState.reader.note;
                     dispatchFlag = true;
                 }
                 if (!ramda.equals(prevState.reader.allowCustomConfig, nextState.reader.allowCustomConfig)) {
 
                     readerState.allowCustomConfig = nextState.reader.allowCustomConfig;
+                    dispatchFlag = true;
+                }
+                if (!ramda.equals(prevState.reader.noteTotalCount, nextState.reader.noteTotalCount)) {
+
+                    readerState.noteTotalCount = nextState.reader.noteTotalCount;
                     dispatchFlag = true;
                 }
                 if (dispatchFlag) {

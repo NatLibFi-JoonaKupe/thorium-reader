@@ -8,7 +8,6 @@
 import * as debug_ from "debug";
 import * as path from "path";
 import { commandLineMainEntry } from "readium-desktop/main/cli";
-import { _PACKAGING, _VSCODE_LAUNCH } from "readium-desktop/preprocessor-directives";
 
 import { setLcpNativePluginPath } from "@r2-lcp-js/parser/epub/lcp";
 import { initGlobalConverters_OPDS } from "@r2-opds-js/opds/init-globals";
@@ -17,20 +16,21 @@ import {
 } from "@r2-shared-js/init-globals";
 
 import { initSessions as initSessionsNoHTTP } from "./main/streamer/streamerNoHttp";
-import { start } from "./main/start";
+import { createStoreFromDi } from "./main/di";
+import { appActions } from "./main/redux/actions";
 
 // import { initSessions as initSessionsHTTP } from "@r2-navigator-js/electron/main/sessions";
 
 // TO TEST ESM (not COMMONJS):
-// // import * as normalizeUrl from "normalize-url";
-// import normalizeUrl from "normalize-url";
+// // import * as normalizeUrl from_"normalize-url";
+// import normalizeUrl from_"normalize-url";
 // console.log(normalizeUrl("//www.sindresorhus.com:80/../baz?b=bar&a=foo"), "#".repeat(200));
 // // import("normalize-url").then(({default: normalizeUrl}) => {
 // //     //=> 'http://sindresorhus.com/baz?a=foo&b=bar'
 // //     console.log("#".repeat(2000), normalizeUrl("//www.sindresorhus.com:80/../baz?b=bar&a=foo"));
 // // });
 
-if (_PACKAGING !== "0") {
+if (__TH__IS_PACKAGED__) {
     // Disable debug in packaged app
     delete process.env.DEBUG;
     debug_.disable();
@@ -74,9 +74,8 @@ setLcpNativePluginPath(lcpNativePluginPath);
 // }
 initSessionsNoHTTP();
 
-if (_VSCODE_LAUNCH === "true") {
-    // tslint:disable-next-line: no-floating-promises
-    start();
+if (__TH__IS_VSCODE_LAUNCH__) {
+    createStoreFromDi().then((store) => store.dispatch(appActions.initRequest.build()));
 } else {
     commandLineMainEntry(); // call main fct
 }

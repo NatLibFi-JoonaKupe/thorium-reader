@@ -1,26 +1,27 @@
-/*
-=-=-= allPublicationsPage.scss
-*/
+@use '../partials/mixin' as mx;
 
-@import 'src/renderer/assets/styles/partials/mixin';
-
+.CSS_START_components_allPublicationsPage {
+    display: none;
+}
 
 .allBooks {
     &_header {
-        font-size: 18px;
-        max-width: 300px;
+        font-size: 20px;
+        max-width: 80%;
         text-overflow: ellipsis;
         overflow: hidden;
+        text-wrap: nowrap;
+        margin-bottom: 10px;
 
 
         &_navigation {
             background-color: var(--color-extralight-grey);
             border-radius: 6px;
-            height: 96px;
+            height: 75px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 5px 20px;
+            padding: 5px 20px 0;
             margin: 10px 0;
             width: inherit;
 
@@ -30,17 +31,19 @@
 
             &_inputs {
                 display: flex;
-                align-items: center; 
+                align-items: end;
                 gap: 10px;
+                height: 56px;
 
                 @media screen and (width <= 1072px) {
-                    gap: 30px;
+                    gap: 25px;
                     flex-direction: column;
                     align-items: start;
+                    height: unset;
                 }
             }
 
-            .form_group { 
+            .form_group {
                 width: 260px!important;
                 height: 30px!important;
 
@@ -101,6 +104,7 @@
 
             &_title {
                 font-size: 14px;
+                font-weight: 600;
                 // margin: 0 0 5px 40px;
                 // position: absolute;
                 // top: -18px;
@@ -110,7 +114,6 @@
             &_container {
                 display: flex;
                 align-items: center;
-                gap: 10px;
 
                 button[disabled] {
                     color: gray;
@@ -127,6 +130,7 @@
                 padding: 0;
                 width: 30px;
                 color: var(--color-blue);
+                height: 32px;
 
                 a {
                     color: var(--color-blue);
@@ -167,6 +171,20 @@
     align-items: center;
     justify-content: center;
     width: 100%;
+
+    .allBooks_header_pagination_arrow:nth-child(2), .allBooks_header_pagination_arrow {
+        padding-top: 0;
+
+        &:not(:disabled) {
+            &:nth-child(1), &:nth-child(5) {
+            padding-top: 4px;
+            }
+
+            &:nth-child(2), &:nth-child(4) {
+                padding-top: 2px;
+            }
+        }
+    }
 }
 
 .showColFilters {
@@ -254,7 +272,7 @@
             }
         }
 
-        @include scrollbar_styling
+        @include mx.scrollbar_styling
     }
 
     &_multi_langs {
@@ -305,16 +323,27 @@
 */
 
 .allBook_table {
+    border-radius: 8px;
+    padding: 4px;
+    margin: 0;
+    border-spacing: 0;
+    width: 100%;
+    position: relative;
+
     &_wrapper {
         overflow: auto;
-        inset: 280px 20px 75px 26px;
+        inset: 240px 20px 75px 26px;
         padding: 0;
         margin-top: 0;
         margin-bottom: 0.4em;
         position: absolute;
         background-color: var(--color-secondary);
 
-        @include scrollbar_styling;
+        @media screen and (width <= 1072px) {
+            inset: 280px 20px 75px 26px;
+        }
+
+        @include mx.scrollbar_styling;
 
         &::-webkit-scrollbar {
             width: 10px;
@@ -324,6 +353,10 @@
             &:hover {
                 border-left: 0;
             }
+        }
+
+        &::-webkit-scrollbar-corner {
+            background-color: transparent;
         }
     }
 
@@ -347,7 +380,7 @@
     &_body {
         grid-template-columns: repeat(auto-fill, 210px);
         // grid-gap: 15px;
-        grid-row-gap: 30px;
+        row-gap: 30px;
         margin-bottom: 20px;
         background-color: var(--color-secondary);
 
@@ -357,13 +390,6 @@
             padding: 0;
         }
     }
-
-    border-radius: 8px;
-    padding: 4px;
-    margin: 0;
-    border-spacing: 0;
-    width: 100%;
-    position: relative;
 }
 
 .filter_container {
@@ -386,6 +412,7 @@
             background-color: var(--color-secondary);
             padding: 2px 0;
             width: 264px;
+            height: 30px;
 
             button span {
                 width: fit-content;
@@ -405,4 +432,8 @@
             }
         }
     }
+}
+
+.CSS_END_components_allPublicationsPage {
+    display: none;
 }

@@ -1,16 +1,19 @@
 // const crypto = require("crypto");
 
 const BundleAnalyzerPlugin = require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
+const StatoscopeWebpackPlugin = require('@statoscope/webpack-plugin').default;
+
 const TerserPlugin = require("terser-webpack-plugin");
 
-// var fs = require("fs");
+const fs = require("fs");
 const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const { VanillaExtractPlugin } = require("@vanilla-extract/webpack-plugin");
 
 const preprocessorDirectives = require("./webpack.config-preprocessor-directives");
+
+let __WEBPACK_SASS_LOADER_FIRST_LIBRARY = false;
 
 const aliases = {
     "readium-desktop": path.resolve(__dirname, "src"),
@@ -43,13 +46,13 @@ let externals = {
     "electron-devtools-installer": "electron-devtools-installer",
     "remote-redux-devtools": "remote-redux-devtools",
     electron: "electron",
-    yargs: "yargs",
+    // yargs: "yargs",
 };
 const _externalsCache = new Set();
 if (nodeEnv !== "production") {
     const nodeExternals = require("webpack-node-externals");
     const neFunc = nodeExternals({
-        allowlist: ["timeout-signal", "nanoid", "normalize-url", "node-fetch", "data-uri-to-buffer", /^fetch-blob/, /^formdata-polyfill/],
+        allowlist: ["marked", "color", "pdf.js", "readium-speech", "@github/paste-markdown", "yargs", "timeout-signal", "nanoid", "normalize-url", "node-fetch", "data-uri-to-buffer", /^fetch-blob/, /^formdata-polyfill/],
         importType: function (moduleName) {
             if (!_externalsCache.has(moduleName)) {
                 console.log(`WEBPACK EXTERNAL (LIBRARY): [${moduleName}]`);
@@ -215,9 +218,36 @@ const scssLoaderConfig = [
     {
         loader: "sass-loader",
         options: {
+            // api: "legacy",
             // Prefer `dart-sass`
             implementation: require("sass"),
-            additionalData: `@import "./src/renderer/assets/styles/partials/variables.scss";`,
+            additionalData: (content, loaderContext) => {
+                console.log("SASS LOADER (LIBRARY): " + loaderContext.resourcePath);
+                if (!__WEBPACK_SASS_LOADER_FIRST_LIBRARY) {
+                    __WEBPACK_SASS_LOADER_FIRST_LIBRARY = true;
+                    console.log("[first] SASS LOADER (LIBRARY)");
+
+                    // -----
+                    // WORKS, but not tested in Windows (different root path syntax for import?)
+                    // const { rootContext } = loaderContext; // resourcePath
+                    // const importPath = path.join(rootContext, "src/renderer/assets/styles/partials/variables.scss");
+                    // // const relativePath = path.relative(rootContext, resourcePath);
+                    // // console.log("CSSSASS", rootContext, resourcePath, relativePath, importPath);
+                    // return `@import "${importPath}"`;
+                    // -----
+                    // WORKS
+                    // const prefix = fs.readFileSync(path.join(process.cwd(), "src/renderer/assets/styles/partials/variables.scss"), { encoding: "utf8" });
+                    // return `\n/* src/renderer/assets/styles/partials/variables.scss */\n\n${prefix}\n${content}`;
+                    // -----
+                    // DOES NOT WORK
+                    // return `@import "src/renderer/assets/styles/partials/variables"`;
+                    // -----
+                    // DOES NOT WORK
+                    // return `@import "src/renderer/assets/styles/partials/variables.scss"`;
+                    // -----
+                }
+                return content;
+            },
             warnRuleAsWarning: true,
         },
     },
@@ -255,21 +285,11 @@ let config = Object.assign(
         module: {
             rules: [
                 {
-                    test: /\.(jsx?|tsx?)$/,
-                    use: [
-                        {
-                            loader: path.resolve("./scripts/webpack-loader-scope-checker.js"),
-                            options: {
-                                forbid: "reader",
-                            },
-                        },
-                    ],
-                },
-                {
                     test: /\.tsx$/,
                     loader: useLegacyTypeScriptLoader ? "awesome-typescript-loader" : "ts-loader",
                     options: {
                         transpileOnly: true, // checkTypeScriptSkip
+                        // compiler: "@typescript/native-preview",
                     },
                 },
                 {
@@ -279,6 +299,7 @@ let config = Object.assign(
                             loader: "babel-loader",
                             options: {
                                 presets: [],
+                                sourceMaps: "inline",
                                 plugins: ["macros"],
                             },
                         },
@@ -286,6 +307,7 @@ let config = Object.assign(
                             loader: useLegacyTypeScriptLoader ? "awesome-typescript-loader" : "ts-loader",
                             options: {
                                 transpileOnly: true, // checkTypeScriptSkip
+                                // compiler: "@typescript/native-preview",
                             },
                         },
                     ],
@@ -341,6 +363,17 @@ let config = Object.assign(
                         },
                     ],
                 },
+                {
+                    test: /\.(jsx?|tsx?)$/,
+                    use: [
+                        {
+                            loader: path.resolve("./scripts/webpack-loader-scope-checker.js"),
+                            options: {
+                                forbids: ["src/renderer/reader", "src/main"],
+                            },
+                        },
+                    ],
+                },
             ],
         },
 
@@ -349,7 +382,7 @@ let config = Object.assign(
                 directory: __dirname,
                 publicPath: "/",
                 watch: {
-                    ignored: [/dist/, /docs/, /scripts/, /test/, /node_modules/, /external-assets/],
+                    ignored: [/dist/, /docs/, /scripts/, /test/, /node_modules/, /external-assets/, /\.flox/],
                 },
             },
             devMiddleware: {
@@ -358,16 +391,6 @@ let config = Object.assign(
             hot: _enableHot,
         },
         plugins: [
-            new BundleAnalyzerPlugin({
-                analyzerMode: "disabled",
-                defaultSizes: "stat", // "parsed"
-                openAnalyzer: false,
-                generateStatsFile: true,
-                statsFilename: "stats_renderer-library.json",
-                statsOptions: null,
-
-                excludeAssets: null,
-            }),
             new HtmlWebpackPlugin({
                 template: "./src/renderer/library/index_library.ejs",
                 filename: "index_library.html",
@@ -377,7 +400,13 @@ let config = Object.assign(
     },
 );
 
-if (!checkTypeScriptSkip) {
+
+if (checkTypeScriptSkip) {
+    // const GoTsCheckerWebpackPlugin = require("./scripts/go-ts-checker-webpack-plugin");
+    // config.plugins.push(
+    //     new GoTsCheckerWebpackPlugin({name: "LIBRARY"}), // we use a single-pass fast-compile/typecheck in this LIBRARY watcher, no need in READER (and MAIN + PDF configs do not activate a watcher)
+    // );
+} else {
     config.plugins.push(
         new ForkTsCheckerWebpackPlugin({
             // measureCompilationTime: true,
@@ -391,15 +420,15 @@ if (nodeEnv !== "production") {
 
     // Renderer config for DEV environment
     config = Object.assign({}, config, {
-        // Enable sourcemaps for debugging webpack's output.
-        devtool: "inline-source-map",
+        // https://webpack.js.org/configuration/devtool/
+        devtool: "source-map",
 
         devServer: {
             static: {
                 directory: __dirname,
                 publicPath: "/",
                 watch: {
-                    ignored: [/dist/, /docs/, /scripts/, /test/, /node_modules/, /external-assets/],
+                    ignored: [/dist/, /docs/, /scripts/, /test/, /node_modules/, /external-assets/, /\.flox/],
                 },
             },
             devMiddleware: {
@@ -419,13 +448,6 @@ if (nodeEnv !== "production") {
     // preprocessorDirectives.rendererLibraryBaseUrl (full HTTP locahost + port)
     config.output.publicPath = "/";
 
-    config.plugins.push(
-        new VanillaExtractPlugin({
-            identifiers: "debug",
-        }),
-    );
-    // config.plugins.push("@vanilla-extract/babel-plugin");
-
     // if (_enableHot) {
     //     config.plugins.push(new webpack.HotModuleReplacementPlugin());
     // }
@@ -443,13 +465,17 @@ if (nodeEnv !== "production") {
 } else {
     config.optimization = {
         ...(config.optimization || {}),
+        nodeEnv: false,
         minimize: true,
         minimizer: [
             new TerserPlugin({
                 extractComments: false,
                 exclude: /MathJax/,
+                // parallel: 3,
                 terserOptions: {
-                    compress: false,
+                    // sourceMap: nodeEnv !== "production" ? true : false,
+                    sourceMap: false,
+                    compress: {defaults:false, dead_code:true, booleans: true, passes: 1},
                     mangle: false,
                     output: {
                         comments: false,
@@ -461,13 +487,6 @@ if (nodeEnv !== "production") {
     // {
     //     minimize: false,
     // };
-
-    config.plugins.push(
-        new VanillaExtractPlugin({
-            identifiers: "debug", // "short"
-        }),
-    );
-    // config.plugins.push("@vanilla-extract/babel-plugin");
 
     config.plugins.push(
         new MiniCssExtractPlugin({
@@ -489,5 +508,32 @@ if (nodeEnv !== "production") {
         use: scssLoaderConfig,
     });
 }
+
+if (process.env.ENABLE_WEBPACK_BUNDLE_STATS)
+config.plugins.push(
+new StatoscopeWebpackPlugin({
+    saveReportTo: './dist/STATOSCOPE_[name].html',
+    // saveStatsTo: './dist/STATOSCOPE_[name].json',
+    saveStatsTo: undefined,
+    normalizeStats: false,
+    saveOnlyStats: false,
+    disableReportCompression: true,
+    statsOptions: {},
+    additionalStats: [],
+    watchMode: false,
+    name: 'renderer-library',
+    open: false,
+    compressor: false,
+}),
+new BundleAnalyzerPlugin({
+    analyzerMode: "disabled",
+    defaultSizes: "stat", // "parsed"
+    openAnalyzer: false,
+    generateStatsFile: true,
+    statsFilename: "stats_renderer-library.json",
+    statsOptions: null,
+
+    excludeAssets: null,
+}));
 
 module.exports = config;

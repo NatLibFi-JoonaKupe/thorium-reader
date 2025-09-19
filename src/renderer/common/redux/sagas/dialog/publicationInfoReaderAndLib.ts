@@ -13,10 +13,10 @@ import { takeSpawnLeading } from "readium-desktop/common/redux/sagas/takeSpawnLe
 import { PublicationView } from "readium-desktop/common/views/publication";
 import { TReturnPromiseOrGeneratorType } from "readium-desktop/typings/api";
 // eslint-disable-next-line local-rules/typed-redux-saga-use-typed-effects
-import { all, call, delay, put, take } from "redux-saga/effects";
-import { race as raceTyped } from "typed-redux-saga/macro";
+import { all, call, put, take } from "redux-saga/effects";
+import { call as callTyped } from "typed-redux-saga/macro";
 
-import { LocatorExtended } from "@r2-navigator-js/electron/renderer";
+import { MiniLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
 
 import { apiSaga } from "../api";
 
@@ -47,14 +47,18 @@ function* checkReaderAndLibPublication(action: dialogActions.openRequest.TAction
 
         // dispatch to API a publication get request
         if (id) {
+            {
+                const getAction = yield* callTyped(getApi, id, false);
+                if (!getAction) {
+                    debug("checkReaderAndLibPublication 1 timeout?", id);
+                    return;
+                }
+                yield call(updateReaderAndLibPublication, getAction, focusWhereAmI, pdfPlayerNumberOfPages, divinaNumberOfPages, divinaContinousEqualTrue, readerReadingLocation, handleLinkUrl);
+            }
 
-            const { b: getAction } = yield* raceTyped({
-                a: delay(5000),
-                b: call(getApi, id),
-            });
-
+            const getAction = yield* callTyped(getApi, id, true);
             if (!getAction) {
-                debug("checkReaderAndLibPublication timeout?", id);
+                debug("checkReaderAndLibPublication 2 timeout?", id);
                 return;
             }
 
@@ -63,13 +67,13 @@ function* checkReaderAndLibPublication(action: dialogActions.openRequest.TAction
     }
 }
 
-function* getApi(id: string) {
+function* getApi(id: string, checkLcpLsd: boolean) {
 
-    yield apiSaga("publication/get", REQUEST_ID, id, true);
+    yield apiSaga("publication/get", REQUEST_ID, id, checkLcpLsd);
     while (true) {
         const action:
             apiActions.result.TAction<TReturnPromiseOrGeneratorType<TApiMethod["publication/get"]>>
-            = yield take(apiActions.result.build);
+            = yield take(apiActions.result.ID);
 
         const { requestId } = action.meta.api;
         if (requestId === REQUEST_ID) {
@@ -79,7 +83,7 @@ function* getApi(id: string) {
 }
 
 // Triggered when the publication data are available from the API
-function* updateReaderAndLibPublication(action: apiActions.result.TAction<PublicationView>, focusWhereAmI: boolean, pdfPlayerNumberOfPages: number | undefined, divinaNumberOfPages: number | undefined, divinaContinousEqualTrue: boolean, readerReadingLocation: LocatorExtended | undefined, handleLinkUrl: ((url: string) => void) | undefined) {
+function* updateReaderAndLibPublication(action: apiActions.result.TAction<PublicationView>, focusWhereAmI: boolean, pdfPlayerNumberOfPages: number | undefined, divinaNumberOfPages: number | undefined, divinaContinousEqualTrue: boolean, readerReadingLocation: MiniLocatorExtended | undefined, handleLinkUrl: ((url: string) => void) | undefined) {
     debug("reader publication from publicationInfo received");
 
     const publicationView = action.payload;
@@ -110,3 +114,5 @@ export function saga() {
         ),
     ]);
 }
+
+export const publicationInfoReaderLibGetPublicationApiCall = getApi;

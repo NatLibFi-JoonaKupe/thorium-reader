@@ -5,6 +5,7 @@
 # Focal Fossa
 # GLIBC 2.31
 FROM ubuntu:20.04
+# Note GitHub Actions: "The Ubuntu 20.04 runner image will be fully unsupported by April 1, 2025"
 
 # Bionic Beaver
 # GLIBC 2.27
@@ -33,9 +34,9 @@ RUN echo $CONTAINER_TIMEZONE && arch && uname &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata &&\
     apt-get install -y build-essential bsdmainutils curl \
     ruby-dev && gem i fpm -f && fpm --version &&\
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash &&\
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash &&\
     apt-get install -y nodejs &&\
-    npm install -g npm@10.x
+    npm install -g npm@11.x
 
 # wget libreadline-dev
 # libc6 xdg-utils libatspi2.0-0 libuuid1 libsecret-1-0 libappindicator3-1
@@ -73,7 +74,6 @@ RUN rm -rf /THORIUM/* &&\
 
 COPY ./typings* /THORIUM/
 COPY ./tsconfig* /THORIUM/
-COPY ./postcss* /THORIUM/
 COPY ./package* /THORIUM/
 COPY ./pat* /THORIUM/
 COPY ./jest* /THORIUM/

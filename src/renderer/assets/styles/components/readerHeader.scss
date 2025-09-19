@@ -1,6 +1,8 @@
-/*
-=-=-= readerHeader.scss
-*/
+@use '../partials/mixin' as mx;
+
+.CSS_START_components_readerHeader {
+    display: none;
+}
 
 [data-theme="dark"] {
     .toolbar_navigation, .picker_container {
@@ -48,6 +50,11 @@
         .tts_toolbar {
             justify-content: center;
             position: relative;
+
+            @media screen and (width <= 850px) {
+                margin-right: 10px;
+            }
+
         }
 
         .menu_option {
@@ -72,12 +79,12 @@
                     background-color: transparent;
                     cursor:auto;
 
-                    &:not(:has(.active_svg)):hover, 
+                    &:not(:has(.active_svg)):hover,
                     &:not(:has(.active_svg)):focus {
                         border-color: transparent;
                         background-color: transparent;
                     }
-                    
+
                     svg {
                     fill: var(--color-medium-grey);
                     color: var(--color-medium-grey);
@@ -106,7 +113,7 @@
                     border-color: var(--color-blue);
                     background-color: var(--color-light-blue);
                 }
-    
+
                 svg {
                     height: 20px;
                     width: 30px;
@@ -165,7 +172,7 @@
     width: 100vw;
     height: 48px;
     background-color: var(--color-extralight-grey);
-    z-index: 200;
+    z-index: 100;
     top: 70px;
     right: 0;
     left: unset;
@@ -219,6 +226,7 @@
 
 .Tts_popover_container {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     height: fit-content;
     background-color: var(--color-extralight-grey);
@@ -227,8 +235,24 @@
     margin: 0;
     padding: 10px;
     border: 1px solid var(--color-verylight-grey-alt);
-    gap: 20px;
+    /* gap: 20px; */
     color: var(--color-primary);
+
+    @media only screen and (width <= 980px) {
+        max-height: 520px;
+        overflow-y: auto;
+        flex-wrap: wrap;
+        max-width: 680px;
+        gap: 5px;
+
+        @include mx.scrollbar_styling;
+
+/*
+        .colorPicker div input {
+            display: none;
+        }
+*/
+    }
 
 
     .react_aria_ComboBox{
@@ -258,6 +282,17 @@
         }
     }
 
+    .ttsSelectVoice {
+        margin-top: 2em;
+        border: 2px dotted var(--color-verylight-grey-alt);
+        border-radius: 1em;
+        padding: 0.4em;
+
+        .react_aria_ComboBox {
+            padding-bottom: 0;
+        }
+    }
+
     .ttsSelectRate, .ttsSelectVoice {
         input {
             padding-left: 10px;
@@ -279,32 +314,48 @@
 .bookmarkButton:focus + label {
     outline: var(--color-blue) solid 2px !important;
     outline-offset: -2px;
-
 }
 
 #bookmarkLabel .bookmarkRemove{
     display: none;
     height: 24px;
+    zoom: 1.2;
 }
 
 #bookmarkLabel .bookmarkIcon{
     display: block;
+    zoom: 1.2;
 }
 
-#bookmarkLabel:hover .bookmarkRemove{
+#bookmarkLabel .bookmarkRemove,
+#bookmarkLabel .bookmarkAdd{
     display: none;
 }
 
-#bookmarkLabel:hover .bookmarkIcon{
+#bookmarkLabel .bookmarkAdd{
+    zoom: 0.6;
+}
+
+#bookmarkLabel .bookmarkRemove.active_svg_option,
+#bookmarkLabel .bookmarkAdd.active_svg_option{
     display: block;
 }
 
-#bookmarkLabel:hover .active_svg.bookmarkRemove {
-    display: block;
-}
-
-#bookmarkLabel:hover .bookmarkIcon.active_svg  {
+#bookmarkLabel:has(.bookmarkRemove.active_svg_option) .bookmarkIcon{
     display: none;
+}
+
+#bookmarkLabel:has(.bookmarkIcon.active_svg_option){
+    background-color: var(--color-blue) !important;
+}
+
+#bookmarkLabel:has(.bookmarkIcon.active_svg_option) .bookmarkRemove.active_svg_option,
+#bookmarkLabel:has(.bookmarkIcon.active_svg_option) .bookmarkIcon.active_svg_option{
+    color: var(--color-secondary) !important;
+}
+
+#bookmarkLabel:has(.bookmarkIcon.active_svg_option) .bookmarkAdd.active_svg_option{
+    fill: var(--color-secondary) !important;
 }
 
 .annotationsIcon svg {
@@ -315,7 +366,7 @@
 .searchHeader_container {
     display: flex;
     align-items: center;
-    
+
     // padding: 20px 0;
     width: 400px;
     margin-right: 10%;
@@ -345,4 +396,8 @@
         width: 100%;
         border-bottom: 2px solid var(--color-blue);
     }
+}
+
+.CSS_END_components_readerHeader {
+    display: none;
 }

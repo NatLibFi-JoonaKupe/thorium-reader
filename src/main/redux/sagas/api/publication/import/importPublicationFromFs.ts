@@ -6,12 +6,23 @@
 // ==LICENSE-END==
 
 import * as debug_ from "debug";
+
+// TypeScript GO:
+// The current file is a CommonJS module whose imports will produce 'require' calls;
+// however, the referenced file is an ECMAScript module and cannot be imported with 'require'.
+// Consider writing a dynamic 'import("...")' call instead.
+// To convert this file to an ECMAScript module, change its file extension to '.mts',
+// or add the field `"type": "module"` to 'package.json'.
+// @__ts-expect-error TS1479 (with TypeScript tsc ==> TS2578: Unused '@ts-expect-error' directive)
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore TS1479
 import { nanoid } from "nanoid";
+
 import * as path from "path";
 import { acceptedExtensionObject } from "readium-desktop/common/extension";
 import { lcpLicenseIsNotWellFormed } from "readium-desktop/common/lcp";
 import { RandomCustomCovers } from "readium-desktop/common/models/custom-cover";
-import { convertMultiLangStringToString } from "readium-desktop/main/converter/tools/localisation";
+import { convertMultiLangStringToString } from "readium-desktop/common/language-string";
 import { extractCrc32OnZip } from "readium-desktop/main/tools/crc";
 import {
     PublicationDocument, PublicationDocumentWithoutTimestampable,
@@ -28,6 +39,7 @@ import { DaisyParsePromise } from "@r2-shared-js/parser/daisy";
 import { convertDaisyToReadiumWebPub } from "@r2-shared-js/parser/daisy-convert-to-epub";
 import { EpubParsePromise } from "@r2-shared-js/parser/epub";
 import { acceptedExtensionArray } from "readium-desktop/common/extension";
+import { getTranslator } from "readium-desktop/common/services/translator";
 
 // Logger
 const debug = debug_("readium-desktop:main#saga/api/publication/import/publicationFromFs");
@@ -44,13 +56,15 @@ export async function importPublicationFromFS(
     let r2Publication: R2Publication;
 
     let { ext } = path.parse(filePath);
-    if (filePath.replace(/\\/g, "/").endsWith("/" + acceptedExtensionObject.nccHtml)) {
+    ext = ext.toLowerCase();
+    if (filePath.replace(/\\/g, "/").toLowerCase().endsWith("/" + acceptedExtensionObject.nccHtml)) {
         ext = acceptedExtensionObject.nccHtml;
     }
     switch (ext) {
 
         case acceptedExtensionObject.epub:
         case acceptedExtensionObject.epub3:
+        case acceptedExtensionObject.pnld:
 
             debug("epub extension", ext);
 
@@ -135,7 +149,6 @@ export async function importPublicationFromFS(
                 const r2PublicationJson = JSON.parse(r2PublicationStr);
                 r2Publication = TaJsonDeserialize(r2PublicationJson, R2Publication);
 
-                // tslint:disable-next-line: max-line-length
                 // https://github.com/readium/r2-shared-js/blob/1aa1a1c10fe56ccb99ef0ed2c15a198c46600e7a/src/parser/divina.ts#L137
                 r2Publication.AddToInternal("type", ext.slice(1));
 
@@ -167,7 +180,7 @@ export async function importPublicationFromFS(
 
         default:
             debug("extension not recognized", ext);
-            throw new Error(diMainGet("translator").translate("dialog.importError", {
+            throw new Error(getTranslator().translate("dialog.importError", {
                 acceptedExtension: `[${ext}] ${acceptedExtensionArray.join(" ")}`,
             }));
     }
@@ -185,6 +198,8 @@ export async function importPublicationFromFS(
     const publicationRepository = diMainGet("publication-repository");
     const publicationStorage = diMainGet("publication-storage");
     const publicationViewConverter = diMainGet("publication-view-converter");
+    const store = diMainGet("store");
+    const locale = store.getState().i18n.locale;
 
     const pubDocument: PublicationDocumentWithoutTimestampable = {
         identifier: uuidv4(),
@@ -205,7 +220,7 @@ export async function importPublicationFromFS(
 
         // see documentTitle vs. publicationTitle (and publicationSubTitle) in PublicationView
         // (and IOpdsPublicationView too, due to polymorphic NormalOrOpdsPublicationView / publicationViewMaybeOpds)
-        title: convertMultiLangStringToString(r2Publication.Metadata.Title) || "-", // some publications do not have a title :( ... we patch here, but in previous versions of Thorium this was not done so we must still check for possible empty title edge-cases in previously-created database entries (we do not change the DB on load+save, we just normalise erroneous values at consumption time)
+        title: convertMultiLangStringToString(r2Publication.Metadata.Title, locale) || "-", // some publications do not have a title :( ... we patch here, but in previous versions of Thorium this was not done so we must still check for possible empty title edge-cases in previously-created database entries (we do not change the DB on load+save, we just normalise erroneous values at consumption time)
 
         tags: [],
         files: [],
@@ -215,6 +230,7 @@ export async function importPublicationFromFS(
 
         lcp: null, // updated below via lcpManager.updateDocumentLcp()
         lcpRightsCopies: 0,
+        lcpRightsPrints: [],
     };
 
     debug(`publication document ID=${pubDocument.identifier} HASH=${pubDocument.hash}`);
@@ -248,30 +264,31 @@ export async function importPublicationFromFS(
     // MUST BE AFTER storePublication() and pubDocument.files.push(file) so that the filesystem cache can be set
     publicationViewConverter.updatePublicationCache(pubDocument, r2Publication);
 
-    if (r2Publication.LCP) {
-        // MUST BE AFTER storePublication() and pubDocument.files.push(file) so that the filesystem cache can be set
-        // note: normally calls updateLcpCache(), but skip as updatePublicationCache() above did this already (avoid unnecessary filesystem writes)
-        lcpManager.updateDocumentLcp(pubDocument, r2Publication.LCP, true);
+    // see below checkPublicationLicenseUpdate
+    // if (r2Publication.LCP) {
+    //     // MUST BE AFTER storePublication() and pubDocument.files.push(file) so that the filesystem cache can be set
+    //     // note: normally calls updateLcpCache(), but skip as updatePublicationCache() above did this already (avoid unnecessary filesystem writes)
+    //     lcpManager.updateDocumentLcp(pubDocument, r2Publication.LCP, true);
 
-        try {
-            await lcpManager.processStatusDocument(
-                pubDocument.identifier,
-                r2Publication,
-            );
+    //     try {
+    //         await lcpManager.processStatusDocument(
+    //             pubDocument.identifier,
+    //             r2Publication,
+    //         );
 
-            debug(r2Publication.LCP);
-            debug(r2Publication.LCP.LSD);
+    //         debug(r2Publication.LCP);
+    //         debug(r2Publication.LCP.LSD);
 
-            lcpManager.updateDocumentLcp(pubDocument, r2Publication.LCP);
-        } catch (err) {
-            debug(err);
-        }
+    //         lcpManager.updateDocumentLcp(pubDocument, r2Publication.LCP);
+    //     } catch (err) {
+    //         debug(err);
+    //     }
 
-        if ((r2Publication as any).__LCP_LSD_UPDATE_COUNT) {
-            debug("processStatusDocument LCP updated.");
-            pubDocument.hash = await extractCrc32OnZip(filePath);
-        }
-    }
+    //     if ((r2Publication as any).__LCP_LSD_UPDATE_COUNT) {
+    //         debug("processStatusDocument LCP updated.");
+    //         pubDocument.hash = await extractCrc32OnZip(filePath);
+    //     }
+    // }
 
     debug("[START] Store publication in database", filePath);
     const newPubDocument = await publicationRepository.save(pubDocument);
@@ -279,6 +296,10 @@ export async function importPublicationFromFS(
 
     if (lcpHashedPassphrase) {
         await lcpManager.saveSecret(newPubDocument, lcpHashedPassphrase);
+    }
+
+    if (r2Publication.LCP) {
+        setTimeout(async () => await lcpManager.checkPublicationLicenseUpdate(newPubDocument), 0);
     }
 
     debug("Publication imported", filePath);

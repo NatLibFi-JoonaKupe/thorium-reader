@@ -5,14 +5,16 @@ const { pathsToModuleNameMapper } = require('ts-jest');
 // const { jsWithBabel: tsjPreset } = require('ts-jest/presets');
 // console.log(tsjPreset.transform);
 
-const { compilerOptions } = require("./tsconfig");
-// const fs = require("fs");
-// const compilerOptions = JSON.parse(fs.readFileSync("./tsconfig.json", { encoding: "utf8" })).compilerOptions;
+// const { compilerOptions } = require("./tsconfig");
+const fs = require("fs");
+const txt = fs.readFileSync("./tsconfig.json", { encoding: "utf8" }).replace(/\s*\/\/.*/g, "");
+// console.log(txt);
+const compilerOptions = JSON.parse(txt).compilerOptions;
 
 const pathMaps = pathsToModuleNameMapper(compilerOptions.paths, { prefix: "<rootDir>/" } );
 // console.log(pathMaps);
 const moduleNameMapper = {
-    "readium-desktop/main/di": "<rootDir>/test/main/di.ts", // se src/common/utils.ts convertMultiLangStringToString()
+    "readium-desktop/main/di": "<rootDir>/test/main/di.ts", // see src/common/utils.ts convertMultiLangStringToString()
     ...pathMaps,
     // ...{
     //     "^@r2\\-streamer\\-js/(.*)$": "<rootDir>/scripts/jest_void.ts",

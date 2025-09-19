@@ -5,14 +5,15 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+import * as stylesBookDetailsDialog from "readium-desktop/renderer/assets/styles/bookDetailsDialog.scss";
+import * as stylePublication from "readium-desktop/renderer/assets/styles/publicationInfos.scss";
+
 import classNames from "classnames";
 import * as debug_ from "debug";
 import DOMPurify from "dompurify";
 import * as React from "react";
-import { I18nTyped, Translator } from "readium-desktop/common/services/translator";
+import { I18nFunction } from "readium-desktop/common/services/translator";
 import { TPublication } from "readium-desktop/common/type/publication.type";
-import * as stylesBookDetailsDialog from "readium-desktop/renderer/assets/styles/bookDetailsDialog.scss";
-import * as stylePublication from "readium-desktop/renderer/assets/styles/publicationInfos.scss";
 import SVG from "../../SVG";
 import * as ChevronDown from "readium-desktop/renderer/assets/icons/chevron-down.svg";
 import * as ChevronUp from "readium-desktop/renderer/assets/icons/chevron-up.svg";
@@ -24,8 +25,7 @@ debug("_");
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface IProps {
     publicationViewMaybeOpds: TPublication;
-    __: I18nTyped;
-    translator: Translator;
+    __: I18nFunction;
 }
 
 interface IState {
@@ -65,8 +65,8 @@ export default class PublicationInfoDescription extends React.Component<IProps, 
         const { publicationViewMaybeOpds: { description }, __ } = this.props;
 
         if (!description) return <></>;
-        const textSanitize = DOMPurify.sanitize(description).replace(/font-size:/g, "font-sizexx:");
-        if (!textSanitize) return <></>;
+        const descriptionSanitized = DOMPurify.sanitize(description).replace(/font-size:/g, "font-sizexx:");
+        if (!descriptionSanitized) return <></>;
         return (
             <>
                 <div className={stylePublication.publicationInfo_heading}>
@@ -84,7 +84,7 @@ export default class PublicationInfoDescription extends React.Component<IProps, 
                         <div
                             ref={this.descriptionRef}
                             className={stylesBookDetailsDialog.allowUserSelect}
-                            dangerouslySetInnerHTML={{ __html: textSanitize }}
+                            dangerouslySetInnerHTML={{ __html: descriptionSanitized }}
                         >
                         </div>
                     </div>

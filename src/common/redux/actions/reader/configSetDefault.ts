@@ -8,6 +8,7 @@
 import { ReaderConfig } from "readium-desktop/common/models/reader";
 import { Action } from "readium-desktop/common/models/redux";
 import { readerConfigInitialState } from "../../states/reader";
+import { isNotNil } from "readium-desktop/utils/nil";
 
 export const ID = "READER_DEFAULT_CONFIG_SET_REQUEST";
 
@@ -18,10 +19,32 @@ export interface Payload {
 export function build(config: ReaderConfig = readerConfigInitialState):
     Action<typeof ID, Payload> {
 
+    const configCopy = {
+        ...config,
+    };
+
+
+    // see src/common/redux/states/reader.ts
+    // see src/common/models/reader.ts
+    if (isNotNil(configCopy["ttsVoices"])) {
+        configCopy["ttsVoices"] = [];
+    }
+    if (isNotNil(configCopy["annotation_defaultColor"])) {
+        configCopy["annotation_defaultColor"] = { ...configCopy["annotation_defaultColor"] };
+    }
+    if (isNotNil(configCopy["ttsHighlightColor"])) {
+        configCopy["ttsHighlightColor"] = { ...configCopy["ttsHighlightColor"] };
+    }
+    if (isNotNil(configCopy["ttsHighlightColor_WORD"])) {
+        configCopy["ttsHighlightColor_WORD"] = { ...configCopy["ttsHighlightColor_WORD"] };
+    }
+    delete configCopy.readerSettingsSection;
+    delete configCopy.readerMenuSection;
+
     return {
         type: ID,
         payload: {
-            config,
+            config: configCopy,
         },
     };
 }

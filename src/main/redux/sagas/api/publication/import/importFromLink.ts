@@ -6,13 +6,24 @@
 // ==LICENSE-END==
 
 import * as debug_ from "debug";
+
+// TypeScript GO:
+// The current file is a CommonJS module whose imports will produce 'require' calls;
+// however, the referenced file is an ECMAScript module and cannot be imported with 'require'.
+// Consider writing a dynamic 'import("...")' call instead.
+// To convert this file to an ECMAScript module, change its file extension to '.mts',
+// or add the field `"type": "module"` to 'package.json'.
+// @__ts-expect-error TS1479 (with TypeScript tsc ==> TS2578: Unused '@ts-expect-error' directive)
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore TS1479
 import nodeFetch from "node-fetch";
+
 import { IOpdsLinkView, IOpdsPublicationView } from "readium-desktop/common/views/opds";
 import { PublicationDocument } from "readium-desktop/main/db/document/publication";
 import { diMainGet } from "readium-desktop/main/di";
 import { ContentType } from "readium-desktop/utils/contentType";
-import { delay, SagaGenerator } from "typed-redux-saga";
-import { call as callTyped, race as raceTyped } from "typed-redux-saga/macro";
+import { SagaGenerator } from "typed-redux-saga";
+import { delay as delayTyped, call as callTyped, race as raceTyped } from "typed-redux-saga/macro";
 
 import { downloader } from "../../../downloader";
 import { packageFromLink } from "../packager/packageLink";
@@ -31,7 +42,7 @@ function* importLinkFromPath(
     const lcpHashedPassphrase = link?.properties?.lcpHashedPassphrase;
 
     const { b: [publicationDocument, alreadyImported] } = yield* raceTyped({
-        a: delay(30000),
+        a: delayTyped(30000),
         b: callTyped(importFromFsService, downloadPath, lcpHashedPassphrase),
     });
 

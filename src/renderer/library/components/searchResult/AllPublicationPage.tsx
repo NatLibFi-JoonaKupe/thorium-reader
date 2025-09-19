@@ -7,14 +7,18 @@
 
 import "regenerator-runtime/runtime"; // for react-table (useAsyncDebounce()) see: https://github.com/TanStack/react-table/issues/2071#issuecomment-679999096
 
-import { HoverEvent } from "@react-types/shared";
-import { convertMultiLangStringToString, langStringIsRTL } from "readium-desktop/renderer/common/language-string";
-import { IStringMap } from "@r2-shared-js/models/metadata-multilang";
-import { Location } from "history";
-import SVG from "readium-desktop/renderer/common/components/SVG";
 import * as stylesPublication from "readium-desktop/renderer/assets/styles/components/allPublicationsPage.scss";
 import * as stylesInput from "readium-desktop/renderer/assets/styles/components/inputs.scss";
 import * as stylesButtons from "readium-desktop/renderer/assets/styles/components/buttons.scss";
+import * as stylesDropDown from "readium-desktop/renderer/assets/styles/components/dropdown.scss";
+// import * as stylesTags from "readium-desktop/renderer/assets/styles/components/tags.scss";
+import * as stylesPublications from "readium-desktop/renderer/assets/styles/components/publications.scss";
+
+import { HoverEvent } from "@react-types/shared";
+import { convertMultiLangStringToLangString, langStringIsRTL } from "readium-desktop/common/language-string";
+import { IStringMap } from "@r2-shared-js/models/metadata-multilang";
+import { Location } from "history";
+import SVG from "readium-desktop/renderer/common/components/SVG";
 import * as ArrowLastIcon from "readium-desktop/renderer/assets/icons/arrowLast-icon.svg";
 import * as SearchIcon from "readium-desktop/renderer/assets/icons/search-icon.svg";
 import * as ArrowFirstIcon from "readium-desktop/renderer/assets/icons/arrowFirst-icon.svg";
@@ -56,9 +60,9 @@ import {
 } from "react-table";
 import { Column, useTable, useFilters, useSortBy, usePagination, useGlobalFilter, useAsyncDebounce } from "react-table";
 import { formatTime } from "readium-desktop/common/utils/time";
-import * as DOMPurify from "dompurify";
+import DOMPurify from "dompurify";
 import * as moment from "moment";
-import { AvailableLanguages, I18nTyped, Translator } from "readium-desktop/common/services/translator";
+import { availableLanguages, I18nFunction } from "readium-desktop/common/services/translator";
 import * as React from "react";
 import { connect } from "react-redux";
 import { PublicationView } from "readium-desktop/common/views/publication";
@@ -82,12 +86,11 @@ import { ipcRenderer } from "electron";
 import PublicationCard from "../publication/PublicationCard";
 import classNames from "classnames";
 import * as Popover from "@radix-ui/react-popover";
-import * as stylesDropDown from "readium-desktop/renderer/assets/styles/components/dropdown.scss";
+
 // import { PublicationInfoLibWithRadix, PublicationInfoLibWithRadixContent, PublicationInfoLibWithRadixTrigger } from "../dialog/publicationInfos/PublicationInfo";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 // import * as FilterIcon from "readium-desktop/renderer/assets/icons/filter-icon.svg";
 // import * as DeleteFilter from "readium-desktop/renderer/assets/icons/deleteFilter-icon.svg";
-// import * as stylesTags from "readium-desktop/renderer/assets/styles/components/tags.scss";
 import { MySelectProps, Select } from "readium-desktop/renderer/common/components/Select";
 import { ComboBox, ComboBoxItem } from "readium-desktop/renderer/common/components/ComboBox";
 import * as CalendarIcon from "readium-desktop/renderer/assets/icons/calendar2-icon.svg";
@@ -95,7 +98,6 @@ import * as CalendarIcon from "readium-desktop/renderer/assets/icons/calendar2-i
 // import * as DoubleCheckIcon from "readium-desktop/renderer/assets/icons/doubleCheck-icon.svg";
 import * as KeyIcon from "readium-desktop/renderer/assets/icons/key-icon.svg";
 import AboutThoriumButton from "../catalog/AboutThoriumButton";
-import * as stylesPublications from "readium-desktop/renderer/assets/styles/components/publications.scss";
 import Menu from "readium-desktop/renderer/common/components/menu/Menu";
 import CatalogMenu from "../publication/menu/CatalogMenu";
 import * as MenuIcon from "readium-desktop/renderer/assets/icons/menu.svg";
@@ -103,6 +105,8 @@ import { IOpdsPublicationView } from "readium-desktop/common/views/opds";
 import * as ValidatedIcon from "readium-desktop/renderer/assets/icons/doubleCheck-icon.svg";
 import * as OnGoingBookIcon from "readium-desktop/renderer/assets/icons/ongoingBook-icon.svg";
 import debounce from "debounce";
+import { useSelector } from "readium-desktop/renderer/common/hooks/useSelector";
+import { ICommonRootState } from "readium-desktop/common/redux/states/commonRootState";
 
 // import GridTagButton from "../catalog/GridTagButton";
 
@@ -215,7 +219,7 @@ export class AllPublicationPage extends React.Component<IProps, IState> {
     public render(): React.ReactElement<{}> {
         const displayType = (this.props.location?.state && (this.props.location.state as IRouterLocationState).displayType) || DisplayType.Grid;
 
-        const { __, location, translator, tags, openReader, displayPublicationInfo } = this.props;
+        const { __, location, tags, openReader, displayPublicationInfo } = this.props;
 
         const secondaryHeader = <Header />;
         // const breadCrumb = <BreadCrumb breadcrumb={[{ name: __("catalog.myBooks"), path: "/library" }, { name: title }]}/>;
@@ -233,7 +237,6 @@ export class AllPublicationPage extends React.Component<IProps, IState> {
                             location={location}
                             displayType={displayType}
                             __={__}
-                            translator={translator}
                             publicationViews={this.state.publicationViews}
                             displayPublicationInfo={displayPublicationInfo}
                             openReader={openReader}
@@ -327,6 +330,7 @@ const mapStateToProps = (state: ILibraryRootState) => ({
     location: state.router.location,
     keyboardShortcuts: state.keyboard.shortcuts,
     tags: state.publication.tag,
+    locale: state.i18n.locale, // refresh
 });
 
 const mapDispatchToProps = (dispatch: TDispatch, _props: IBaseProps) => {
@@ -359,8 +363,7 @@ const commonCellStyles = (props: ITableCellProps_Column & ITableCellProps_Generi
 };
 
 interface ITableCellProps_GlobalFilter {
-    __: I18nTyped;
-    translator: Translator;
+    __: I18nFunction;
     displayType: DisplayType;
 
     preGlobalFilteredRows: Row<IColumns>[];
@@ -395,11 +398,11 @@ const CellGlobalFilter: React.FC<ITableCellProps_GlobalFilter> = (props) => {
     // className={classNames(classStyleExample)}
 
     return (
-        <div className={stylesInput.form_group}>
+        <div className={classNames(stylesInput.form_group, stylesInput.form_group_allPubSearch)}>
             <label
                 id="globalSearchLabel"
                 htmlFor="globalSearchInput"
-                style={{ display: "flex", gap: "5px" }}>
+                style={{ display: "flex", gap: "2px" }}>
                 {`${props.__("header.searchPlaceholder")}`}
                 <div
                     aria-live="assertive">
@@ -444,11 +447,11 @@ const CellGlobalFilter: React.FC<ITableCellProps_GlobalFilter> = (props) => {
 };
 
 interface ITableCellProps_Filter {
-    __: I18nTyped;
-    translator: Translator;
+    __: I18nFunction;
     displayType: DisplayType;
 
     showColumnFilters: boolean,
+    setShowColumnFilters: (show: boolean) => void,
     accessibilitySupportEnabled: boolean,
 
     selectedTag: string,
@@ -511,11 +514,23 @@ const CellColumnFilter: React.FC<ITableCellProps_Filter & ITableCellProps_Column
     const [searchParams] = useSearchParams();
     const searchParamsFocus = searchParams.get("focus");
     const searchParamsValue = searchParams.get("value");
+    const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const searchParamsFocus_ = queryParams.get("focus") || undefined;
+    const searchParamsValue_ = queryParams.get("value") || undefined;
+    const setShowColumnFilters = props.setShowColumnFilters;
     React.useEffect(() => {
         if (searchParamsFocus === "tags" && props.column.id === "colTags") {
             console.log("focus=tags");
+            console.log(searchParamsFocus, searchParamsFocus_);
+            console.log(searchParamsValue, searchParamsValue_);
             if (!inputRef.current) {
                 console.log("NO REF!");
+                if (!props.showColumnFilters) {
+                    console.log("setShowColumnFilters FORCE");
+                    setShowColumnFilters(true);
+                }
                 return;
 
             }
@@ -531,7 +546,7 @@ const CellColumnFilter: React.FC<ITableCellProps_Filter & ITableCellProps_Column
                     (inputRef?.current?.value || "").trim() || undefined);
             }
         }
-    }, [props.column.id, props.accessibilitySupportEnabled, props.column, searchParamsFocus, searchParamsValue, onInputChange]);
+    }, [props.showColumnFilters, setShowColumnFilters, props.column.id, props.accessibilitySupportEnabled, props.column, searchParamsFocus, searchParamsValue, searchParamsFocus_, searchParamsValue_, onInputChange]);
 
     return props.showColumnFilters ?
         <div className={stylesPublication.showColFilters_wrapper}>
@@ -545,6 +560,12 @@ const CellColumnFilter: React.FC<ITableCellProps_Filter & ITableCellProps_Column
                 ref={inputRef}
                 type="search"
                 onChange={(e) => {
+                    if (queryParams.has("focus") || queryParams.has("value")) {
+                         navigate(location.pathname, {
+                             state: location.state,
+                             replace: true,
+                         });
+                     }
                     // setValue(e.target.value);
                     // forceReRender(NaN);
                     if (!props.accessibilitySupportEnabled) {
@@ -562,7 +583,7 @@ const CellColumnFilter: React.FC<ITableCellProps_Filter & ITableCellProps_Column
                             (inputRef?.current?.value || "").trim() || undefined);
                         if (props.column.id === "colTags") {
                             props.setSelectedTag(inputRef?.current?.value.trim());
-                            console.log(inputRef.current.value);
+                            // console.log(inputRef.current.value);
                         }
                     }
                 }}
@@ -705,50 +726,59 @@ const CellLangs: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell &
 };
 
 interface IColumnValue_Publishers extends IColumnValue_BaseString {
-    publishers: string[],
+    publishersLangString: (string | IStringMap)[];
 };
 interface ITableCellProps_Value_Publishers {
     value: IColumnValue_Publishers;
 }
 const CellPublishers: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell & ITableCellProps_Value_Publishers> = (props) => {
 
-    const link = (t: string) => {
+    const locale = useSelector((state: ICommonRootState) => state.i18n.locale);
+
+    const link = (text: string | IStringMap) => {
+
+        const textLangStr = convertMultiLangStringToLangString(text, locale);
+        const textLang = textLangStr && textLangStr[0] ? textLangStr[0].toLowerCase() : "";
+        const textIsRTL = langStringIsRTL(textLang);
+        const textStr = textLangStr && textLangStr[1] ? textLangStr[1] : "";
+
         return <a
-            title={`${t} (${props.__("header.searchPlaceholder")})`}
+            dir={textIsRTL ? "rtl" : undefined}
+            title={`${textStr} (${props.__("header.searchPlaceholder")})`}
             tabIndex={0}
             onKeyUp={(e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
                     // props.column.setFilter(t);
-                    props.setShowColumnFilters(true, props.column.id, t);
+                    props.setShowColumnFilters(true, props.column.id, textStr);
                 }
             }}
 
             onClick={(e) => {
                 e.preventDefault();
                 // props.column.setFilter(t);
-                props.setShowColumnFilters(true, props.column.id, t);
+                props.setShowColumnFilters(true, props.column.id, textStr);
             }}
-            className={stylesPublication.cell_link}>{t}</a>;
+            className={stylesPublication.cell_link}>{textStr}</a>;
     };
 
     // props.value.label === props.value.tags.join(", ")
 
-    return props.value.publishers?.length ?
+    return props.value.publishersLangString?.length ?
         (
-            props.value.publishers.length === 1 ? (
+            props.value.publishersLangString.length === 1 ? (
                 <div className={stylesPublication.cell_wrapper}>
                     {
-                        link(props.value.publishers[0])
+                        link(props.value.publishersLangString[0])
                     }
                 </div>
             ) : (
                 <ul className={classNames(stylesPublication.cell_wrapper, stylesPublication.cell_multi_langs)}>
                     {
-                        props.value.publishers.map((t, i) => {
+                        props.value.publishersLangString.map((langString, i) => {
                             return <li
                                 key={`k${i}`}
-                            >{link(t)}</li>;
+                            >{link(langString)}</li>;
                         })
                     }
                 </ul>
@@ -757,36 +787,45 @@ const CellPublishers: React.FC<ITableCellProps_Column & ITableCellProps_GenericC
 };
 
 interface IColumnValue_Authors extends IColumnValue_BaseString {
-    authors: string[],
+    authorsLangString: (string | IStringMap)[];
 };
 interface ITableCellProps_Value_Authors {
     value: IColumnValue_Authors;
 }
 const CellAuthors: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell & ITableCellProps_Value_Authors> = (props) => {
 
-    const link = (t: string) => {
+    const locale = useSelector((state: ICommonRootState) => state.i18n.locale);
+
+    const link = (text: string | IStringMap) => {
+
+        const textLangStr = convertMultiLangStringToLangString(text, locale);
+        const textLang = textLangStr && textLangStr[0] ? textLangStr[0].toLowerCase() : "";
+        const textIsRTL = langStringIsRTL(textLang);
+        const textStr = textLangStr && textLangStr[1] ? textLangStr[1] : "";
+
         return <a
-            title={`${t} (${props.__("header.searchPlaceholder")})`}
+            dir={textIsRTL ? "rtl" : undefined}
+            title={`${textStr} (${props.__("header.searchPlaceholder")})`}
             tabIndex={0}
             onKeyUp={(e) => {
                 if (e.key === "Enter") {
                     e.preventDefault();
                     // props.column.setFilter(t);
-                    props.setShowColumnFilters(true, props.column.id, t);
+                    props.setShowColumnFilters(true, props.column.id, textStr);
                 }
             }}
 
             onClick={(e) => {
                 e.preventDefault();
                 // props.column.setFilter(t);
-                props.setShowColumnFilters(true, props.column.id, t);
+                props.setShowColumnFilters(true, props.column.id, textStr);
             }}
-            className={stylesPublication.cell_link}>{t}</a>;
+            className={stylesPublication.cell_link}>{textStr}</a>;
     };
 
     // props.value.label === props.value.tags.join(", ")
 
-    return props.value.authors?.length ?
+    return props.value.authorsLangString?.length ?
         (
             <div style={{
                 ...commonCellStyles(props),
@@ -795,19 +834,19 @@ const CellAuthors: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell
                 // width: props.displayType === DisplayType.Grid ? "250px" : undefined,
             }}>
                 {
-                    props.value.authors.length === 1 ? (
+                    props.value.authorsLangString.length === 1 ? (
                         <div className={stylesPublication.cell_wrapper}>
                             {
-                                link(props.value.authors[0])
+                                link(props.value.authorsLangString[0])
                             }
                         </div>
                     ) : (
                         <ul className={classNames(stylesPublication.cell_wrapper, stylesPublication.cell_multi_langs)}>
                             {
-                                props.value.authors.map((t, i) => {
+                                props.value.authorsLangString.map((langString, i) => {
                                     return <li
                                         key={`k${i}`}
-                                    >{link(t)}</li>;
+                                    >{link(langString)}</li>;
                                 })
                             }
                         </ul>
@@ -880,7 +919,7 @@ const CellTags: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell & 
 const CellDescription: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell & ITableCellProps_StringValue> = (props) => {
 
     const textNeedToBeSanitized = props.value || "";
-    const textSanitize = DOMPurify.sanitize(textNeedToBeSanitized).replace(/font-size:/g, "font-sizexx:");
+    const cellTextSanitized = DOMPurify.sanitize(textNeedToBeSanitized).replace(/font-size:/g, "font-sizexx:");
     const [isOpen, setIsOpen] = React.useState(false);
 
     return (<div
@@ -899,7 +938,7 @@ const CellDescription: React.FC<ITableCellProps_Column & ITableCellProps_Generic
             // textAlign: props.displayType === DisplayType.Grid ? "justify" : "start",
             textAlign: "start",
         }}>
-        <p dangerouslySetInnerHTML={{ __html: textSanitize }}></p>
+        <p dangerouslySetInnerHTML={{ __html: cellTextSanitized }}></p>
         {props.value ?
             <Popover.Root onOpenChange={() => setIsOpen(!isOpen)}>
                 <Popover.Trigger style={{maxWidth: "15px"}}>
@@ -911,7 +950,8 @@ const CellDescription: React.FC<ITableCellProps_Column & ITableCellProps_Generic
                 </Popover.Trigger>
                 <Popover.Portal>
                     <Popover.Content collisionPadding={{top : 280}} avoidCollisions sideOffset={5} align="end" alignOffset={-10} hideWhenDetached>
-                        <p className={stylesDropDown.dropdown_description} dangerouslySetInnerHTML={{ __html: textSanitize }}></p>
+                        <p className={stylesDropDown.dropdown_description}
+                            dangerouslySetInnerHTML={{ __html: cellTextSanitized }}></p>
                         <Popover.Arrow className={stylesDropDown.PopoverArrow} aria-hidden />
                     </Popover.Content>
                 </Popover.Portal>
@@ -1154,8 +1194,10 @@ interface ITableCellProps_Value_Actions {
 
 const CellTitle: React.FC<ITableCellProps_Column & ITableCellProps_GenericCell & ITableCellProps_Value_Title> = (props) => {
 
+    const locale = useSelector((state: ICommonRootState) => state.i18n.locale);
+
     // props.value.label
-    const pubTitleLangStr = convertMultiLangStringToString(props.translator, props.value.pubTitle);
+    const pubTitleLangStr = convertMultiLangStringToLangString(props.value.pubTitle, locale);
     const pubTitleLang = pubTitleLangStr && pubTitleLangStr[0] ? pubTitleLangStr[0].toLowerCase() : "";
     const pubTitleIsRTL = langStringIsRTL(pubTitleLang);
     const pubTitleStr = pubTitleLangStr && pubTitleLangStr[1] ? pubTitleLangStr[1] : "";
@@ -1326,7 +1368,7 @@ interface IColumns {
     colDuration: string;
     colActions: IColumnValue_Actions;
 
-    col_a11y_accessibilitySummary: string; // string | IStringMap => convertMultiLangStringToString()
+    col_a11y_accessibilitySummary: string; // string | IStringMap => convertMultiLangStringToLangString()
     // col_a11y_accessMode: IColumnValue_A11y_StringArray; // string[]
     // col_a11y_accessModeSufficient: IColumnValue_A11y_StringArrayArray; // (string[])[]
     // col_a11y_accessibilityFeature: IColumnValue_A11y_StringArray; // string[]
@@ -1355,8 +1397,7 @@ type MyTableInstance<T extends object> =
     };
 
 interface ITableCellProps_Common {
-    __: I18nTyped;
-    translator: Translator;
+    __: I18nFunction;
     displayType: DisplayType;
 
     displayPublicationInfo: ReturnType<typeof mapDispatchToProps>["displayPublicationInfo"];
@@ -1373,19 +1414,24 @@ interface ITableCellProps_TableView {
 export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Common> = (props) => {
 
     const [showColumnFilters, setShowColumnFilters] = React.useState(false);
+    const setShowColumnFilters_ = React.useCallback((show: boolean) => {
+        setShowColumnFilters(show);
+    }, [setShowColumnFilters]);
     const [selectedTag, setSelectedTag] = React.useState("");
 
     const scrollToViewRef = React.useRef(null);
 
-    const { openReader, displayPublicationInfo, displayType, __, focusInputRef, translator, publicationViews, accessibilitySupportEnabled, tags } = props;
+    const { openReader, displayPublicationInfo, displayType, __, focusInputRef, publicationViews, accessibilitySupportEnabled, tags } = props;
+
+    const locale = useSelector((state: ICommonRootState) => state.i18n.locale);
 
     const renderProps_Filter: ITableCellProps_Filter =
     {
         __,
-        translator,
         displayType,
 
         showColumnFilters,
+        setShowColumnFilters: setShowColumnFilters_,
         accessibilitySupportEnabled,
 
         selectedTag,
@@ -1395,7 +1441,6 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
     const renderProps_Cell: ITableCellProps_GenericCell =
     {
         __,
-        translator,
         displayType,
 
         selectedTag,
@@ -1425,8 +1470,8 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
         return publicationViews.slice().reverse().map((publicationView) => {
 
             // translator.translateContentField(author)
-            // const authors = publicationView.authors ? formatContributorToString(publicationView.authors, translator) : "";
-            // const publishers = publicationView.publishers ? formatContributorToString(publicationView.publishers, translator) : "";
+            // const authors = publicationView.authors ? formatContributorToString(publicationView.authorsLangString, translator) : "";
+            // const publishers = publicationView.publishers ? formatContributorToString(publicationView.publishersLangString, translator) : "";
 
             // publicationView.publishedAt = r2Publication.metadata.PublicationDate && moment(metadata.PublicationDate).toISOString();
             const momPublishedDate_ = publicationView.publishedAt ? moment(publicationView.publishedAt) : undefined;
@@ -1437,7 +1482,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
             let publishedDateVisual = publishedDateCanonical;
             if (publishedDateCanonical) {
                 try {
-                    publishedDateVisual = new Intl.DateTimeFormat(translator.getLocale(), { dateStyle: "medium", timeStyle: undefined }).format(new Date(publishedDateCanonical));
+                    publishedDateVisual = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: undefined }).format(new Date(publishedDateCanonical));
                 } catch (err) {
                     console.log(err);
                 }
@@ -1451,7 +1496,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
             let lastReadDateVisual = lastReadDateCanonical;
             if (lastReadDateCanonical) {
                 try {
-                    lastReadDateVisual = new Intl.DateTimeFormat(translator.getLocale(), { dateStyle: "medium", timeStyle: "short" }).format(new Date(lastReadDateCanonical));
+                    lastReadDateVisual = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(lastReadDateCanonical));
                 } catch (err) {
                     console.log(err);
                 }
@@ -1490,8 +1535,8 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                 // Note: "pt-PT" in the i18next ResourceBundle is not captured because key match reduced to "pt"
                 // Also: pt-pt vs. pt-PT case sensitivity
                 // Also zh-CN (mandarin chinese)
-                const l = lang.split("-")[0] as keyof typeof AvailableLanguages;
-                const ll = AvailableLanguages[l] || lang;
+                const l = lang.split("-")[0] as keyof typeof availableLanguages;
+                const ll = availableLanguages[l] || lang;
 
                 const note = (lang !== ll) ? ` (${lang})` : "";
 
@@ -1512,7 +1557,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
             let strA11Summary = "";
             if (publicationView.a11y_accessibilitySummary) {
 
-                const langStr = convertMultiLangStringToString(translator, publicationView.a11y_accessibilitySummary);
+                const langStr = convertMultiLangStringToLangString(publicationView.a11y_accessibilitySummary, locale);
 
                 if (langStr && langStr[1]) {
                     strA11Summary = DOMPurify.sanitize(langStr[1]).replace(/font-size:/g, "font-sizexx:");
@@ -1533,8 +1578,18 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                     pubTitle: publicationView.publicationTitle,
                 },
                 colAuthors: { // IColumnValue_Authors
-                    label: publicationView.authors ? publicationView.authors.join(", ") : "",
-                    authors: publicationView.authors,
+                    label: publicationView.authorsLangString ?
+                        // publicationView.authors.join(", ")
+                        publicationView.authorsLangString.reduce<string>((prev, text) => {
+                            const textLangStr = convertMultiLangStringToLangString(text, locale);
+                            // const textLang = textLangStr && textLangStr[0] ? textLangStr[0].toLowerCase() : "";
+                            // const textIsRTL = langStringIsRTL(textLang);
+                            const textStr = textLangStr && textLangStr[1] ? textLangStr[1] : "";
+
+                            return prev ? `${prev}, ${textStr}` : textStr;
+                        }, "")
+                        : "",
+                    authorsLangString: publicationView.authorsLangString,
                 },
                 colReadingState: { // IColumnValue_Authors
                     label: publicationView.readingFinished ? `${__("publication.read")}` : publicationView.lastReadingLocation ? `${__("publication.onGoing")}` : `${__("publication.notStarted")}`,
@@ -1545,8 +1600,18 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                     isLcp: isLcp,
                 },
                 colPublishers: { // IColumnValue_Publishers
-                    label: publicationView.publishers ? publicationView.publishers.join(", ") : "",
-                    publishers: publicationView.publishers,
+                    label: publicationView.publishersLangString ?
+                        // publicationView.publishers.join(", ")
+                        publicationView.publishersLangString.reduce<string>((prev, text) => {
+                            const textLangStr = convertMultiLangStringToLangString(text, locale);
+                            // const textLang = textLangStr && textLangStr[0] ? textLangStr[0].toLowerCase() : "";
+                            // const textIsRTL = langStringIsRTL(textLang);
+                            const textStr = textLangStr && textLangStr[1] ? textLangStr[1] : "";
+
+                            return prev ? `${prev}, ${textStr}` : textStr;
+                        }, "")
+                        : "",
+                    publishersLangString: publicationView.publishersLangString,
                 },
                 colLanguages: { // IColumnValue_Tags
                     label: langsArray ? langsArray.join(", ") : "",
@@ -1618,7 +1683,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
             };
             return cols;
         });
-    }, [translator, publicationViews, __]);
+    }, [locale, publicationViews, __]);
 
     const sortFunction = (rowA: Row<IColumns>, rowB: Row<IColumns>, columnId: IdType<IColumns>, desc?: boolean) => {
         let res = 0;
@@ -1949,6 +2014,74 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
     const tableInstance =
         useTable<IColumns>(opts, useFilters, useGlobalFilter, useSortBy, usePagination) as MyTableInstance<IColumns>;
 
+    const keyboardShortcuts = useSelector((state: ILibraryRootState) => state.keyboard.shortcuts);
+
+    const onKeyboardNavigateFirst = React.useCallback(() => {
+        tableInstance.gotoPage(0);
+    }, [tableInstance]);
+    const onKeyboardNavigatePrevious = React.useCallback(() => {
+        tableInstance.previousPage();
+    }, [tableInstance]);
+    const onKeyboardNavigateNext = React.useCallback(() => {
+        tableInstance.nextPage();
+    }, [tableInstance]);
+    const onKeyboardNavigateLast = React.useCallback(() => {
+        tableInstance.gotoPage(tableInstance.pageCount - 1);
+    }, [tableInstance]);
+
+    const registerAllKeyboardListeners = React.useCallback(() => {
+
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            keyboardShortcuts.NavigatePreviousLibraryPageAlt,
+            onKeyboardNavigateFirst);
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            keyboardShortcuts.NavigatePreviousLibraryPage,
+            onKeyboardNavigatePrevious);
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            keyboardShortcuts.NavigateNextLibraryPage,
+            onKeyboardNavigateNext);
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            keyboardShortcuts.NavigateNextLibraryPageAlt,
+            onKeyboardNavigateLast);
+    }, [onKeyboardNavigateFirst, onKeyboardNavigateLast, onKeyboardNavigateNext, onKeyboardNavigatePrevious,
+        keyboardShortcuts.NavigatePreviousLibraryPageAlt,
+        keyboardShortcuts.NavigatePreviousLibraryPage,
+        keyboardShortcuts.NavigateNextLibraryPage,
+        keyboardShortcuts.NavigateNextLibraryPageAlt,
+    ]);
+
+    const unregisterAllKeyboardListeners = React.useCallback(() => {
+        unregisterKeyboardListener(onKeyboardNavigateFirst);
+        unregisterKeyboardListener(onKeyboardNavigateLast);
+        unregisterKeyboardListener(onKeyboardNavigatePrevious);
+        unregisterKeyboardListener(onKeyboardNavigateNext);
+    }, [onKeyboardNavigateFirst, onKeyboardNavigateLast, onKeyboardNavigateNext, onKeyboardNavigatePrevious]);
+
+    // const firstMountRef = React.useRef(true);
+    // const keyboardShortcutsRef = React.useRef(keyboardShortcuts);
+    React.useEffect(() => {
+        ensureKeyboardListenerIsInstalled();
+
+        // if (firstMountRef.current) {
+        //     registerAllKeyboardListeners();
+        //     firstMountRef.current = false;
+        // }
+
+        // if (!keyboardShortcutsMatch(keyboardShortcutsRef.current, keyboardShortcuts)) {
+            unregisterAllKeyboardListeners();
+            registerAllKeyboardListeners();
+            // keyboardShortcutsRef.current = keyboardShortcuts;
+        // }
+
+        return () => {
+            unregisterAllKeyboardListeners();
+        };
+    }, [registerAllKeyboardListeners, unregisterAllKeyboardListeners, keyboardShortcuts]);
+
     React.useEffect(() => {
 
         const cb = () => {
@@ -1958,11 +2091,11 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                 if (!bodyWidth) {
                     return;
                 }
-                
+
                 const coverWidth = 205;
                 const col = Math.floor(bodyWidth/coverWidth);
                 const nbItemMissing = col - PAGESIZE%col;
-                
+
                 tableInstance.setPageSize(PAGESIZE+nbItemMissing);
             } else {
                 tableInstance.setPageSize(PAGESIZE);
@@ -1973,7 +2106,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
         const cdDebounce = debounce(cb, 500);
 
         window.addEventListener("resize", cdDebounce);
-        
+
         return () => {
             window.removeEventListener("resize", cdDebounce);
         };
@@ -2042,7 +2175,6 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                             globalFilter={tableInstance.state.globalFilter}
                             setGlobalFilter={tableInstance.setGlobalFilter}
                             __={__}
-                            translator={translator}
                             displayType={displayType}
                             focusInputRef={focusInputRef}
 
@@ -2053,7 +2185,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                                     if (currentShow && !show) {
                                         for (const col of tableInstance.allColumns) {
                                             tableInstance.setFilter(col.id, "");
-                                            
+
                                         }
                                     }
                                 }, 200);
@@ -2084,14 +2216,33 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                                     <ComboBox
                                         label={__("header.fitlerTagTitle")}
                                         defaultItems={tagsOptions}
-                                        defaultSelectedKey={tagsOptions.find((tag) => tag.name?.toLowerCase().includes(selectedTag?.toLowerCase()))?.id || undefined}
-                                        onSelectionChange={(i) => {
-                                            setSelectedTag(tagsOptions.find((tag) => tag.id === i)?.name);
-                                            tableInstance.setFilter("colTags", tagsOptions.find((tag) => tag.id === i)?.name);
-                                            // console.log(tableInstance.columns.find((element) => element.Header === "Tags"))
+                                        defaultSelectedKey={
+                                            tagsOptions.findIndex((tag) =>
+                                                tag.name?.toLowerCase() === selectedTag.toLowerCase())
+                                        }
+                                        selectedKey={
+                                            tagsOptions.findIndex((tag) =>
+                                                tag.name?.toLowerCase() === selectedTag.toLowerCase())
+                                        }
+                                        onSelectionChange={(key) => {
+
+                                            if (key === null) {
+                                                // nothing
+                                            } else {
+
+                                                const found = tagsOptions.find((tag) => tag.id === key);
+                                                if (found) {
+                                                    setSelectedTag(found.name);
+                                                }
+                                                tableInstance.setFilter("colTags", found?.name || undefined);
+                                            }
                                         }}
                                         svg={TagIcon}
                                         allowsCustomValue
+                                        onInputChange={(v) => setSelectedTag(v)}
+                                        inputValue={selectedTag}
+                                        defaultInputValue={selectedTag}
+                                        aria-label={__("header.fitlerTagTitle")}
                                     >
                                         {item => <ComboBoxItem
                                             onHoverStart={(e: HoverEvent) => {
@@ -2203,6 +2354,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                     style={{ visibility: "hidden" }}>{" "}</span>
                 <table {...tableInstance.getTableProps()}
                     className={stylesPublication.allBook_table}
+                    role= {displayType === DisplayType.Grid ? "presentation" : "table"}
                     style={{
                         display: "table",
                     }}>
@@ -2393,6 +2545,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                     <tbody {...tableInstance.getTableBodyProps()}
                         className={stylesPublication.allBook_table_body}
                         id="publicationsTableBody"
+                        role= {displayType === DisplayType.Grid ? "presentation" : "rowgroup"}
                         style={{
                             display: displayType === DisplayType.Grid ? "grid" : "",
                         }}
@@ -2408,7 +2561,7 @@ export const TableView: React.FC<ITableCellProps_TableView & ITableCellProps_Com
                                 console.log("####");
                                 return (<tr key={index}></tr>);
                             }
-                        
+
                             return (
                                 displayType === DisplayType.Grid ?
                                     <tr key={index}>

@@ -5,19 +5,23 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
-import classNames from "classnames";
-import * as React from "react";
-import { isDivinaFn, isPdfFn } from "readium-desktop/common/isManifestType";
-import { I18nTyped, Translator } from "readium-desktop/common/services/translator";
-import { TPublication } from "readium-desktop/common/type/publication.type";
-import { formatTime } from "readium-desktop/common/utils/time";
-import { IOpdsBaseLinkView } from "readium-desktop/common/views/opds";
 import * as stylesBookDetailsDialog from "readium-desktop/renderer/assets/styles/bookDetailsDialog.scss";
 import * as stylesGlobal from "readium-desktop/renderer/assets/styles/global.scss";
 import * as stylePublication from "readium-desktop/renderer/assets/styles/publicationInfos.scss";
+import * as stylesModals from "readium-desktop/renderer/assets/styles/components/modals.scss";
+
+import classNames from "classnames";
+import * as React from "react";
+import { isDivinaFn, isPdfFn } from "readium-desktop/common/isManifestType";
+import { I18nFunction } from "readium-desktop/common/services/translator";
+import { TPublication } from "readium-desktop/common/type/publication.type";
+import { formatTime } from "readium-desktop/common/utils/time";
+import { IOpdsContributorView } from "readium-desktop/common/views/opds";
 
 import { TaJsonDeserialize } from "@r2-lcp-js/serializable";
-import { LocatorExtended } from "@r2-navigator-js/electron/renderer";
+
+import { MiniLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
+
 import { Publication as R2Publication } from "@r2-shared-js/models/publication";
 
 import Cover, { CoverWithForwardedRef } from "../../Cover";
@@ -26,17 +30,20 @@ import { FormatPublicationLanguage } from "./formatPublicationLanguage";
 import { FormatPublisherDate } from "./formatPublisherDate";
 import LcpInfo from "./LcpInfo";
 import PublicationInfoDescription from "./PublicationInfoDescription";
-import { convertMultiLangStringToString, langStringIsRTL } from "readium-desktop/renderer/common/language-string";
-import PublicationInfoA11y from "./publicationInfoA11y";
+import { convertMultiLangStringToLangString, langStringIsRTL } from "readium-desktop/common/language-string";
+// import PublicationInfoA11y from "./publicationInfoA11y";
 import { PublicationView } from "readium-desktop/common/views/publication";
 import * as Dialog from "@radix-ui/react-dialog";
-import * as stylesModals from "readium-desktop/renderer/assets/styles/components/modals.scss";
 import SVG from "../../SVG";
 import * as OnGoingBookIcon from "readium-desktop/renderer/assets/icons/ongoingBook-icon.svg";
 import * as ChevronUp from "readium-desktop/renderer/assets/icons/chevron-up.svg";
 import * as ChevronDown from "readium-desktop/renderer/assets/icons/chevron-down.svg";
+import { useTranslator } from "readium-desktop/renderer/common/hooks/useTranslator";
+import { useSelector } from "readium-desktop/renderer/common/hooks/useSelector";
+import { ICommonRootState } from "readium-desktop/common/redux/states/commonRootState";
 
-
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { PublicationInfoA11y2 } from "./PublicationInfoA11y2";
 
 
 export interface IProps {
@@ -52,15 +59,14 @@ export interface IProps {
     pdfPlayerNumberOfPages: number | undefined; // super hacky :(
     divinaNumberOfPages: number | undefined; // super hacky :(
     divinaContinousEqualTrue: boolean;
-    readerReadingLocation: LocatorExtended;
-    translator: Translator;
-    onClikLinkCb?: (tag: IOpdsBaseLinkView) => () => void | undefined;
+    readerReadingLocation: MiniLocatorExtended;
+    onClikLinkCb?: (tag: IOpdsContributorView) => () => void | undefined;
     closeDialogCb: () => void;
 }
 
 const Duration = (props: {
     duration: number;
-    __: I18nTyped;
+    __: I18nFunction;
 }) => {
 
     const { duration, __ } = props;
@@ -87,15 +93,14 @@ const Progression = (props: {
     r2Publication: R2Publication | null,
     manifestUrlR2Protocol: string | null,
     handleLinkUrl: ((url: string) => void) | undefined;
-    locatorExt: LocatorExtended,
+    locatorExt: MiniLocatorExtended,
     focusWhereAmI: boolean,
     pdfPlayerNumberOfPages: number | undefined, // super hacky :(
     divinaNumberOfPages: number | undefined, // super hacky :(
     divinaContinousEqualTrue: boolean,
-    __: I18nTyped;
     closeDialogCb: () => void;
 }) => {
-    const { __, closeDialogCb, locatorExt, focusWhereAmI, pdfPlayerNumberOfPages, divinaNumberOfPages, divinaContinousEqualTrue, r2Publication, manifestUrlR2Protocol, handleLinkUrl } = props;
+    const { closeDialogCb, locatorExt, focusWhereAmI, pdfPlayerNumberOfPages, divinaNumberOfPages, divinaContinousEqualTrue, r2Publication, manifestUrlR2Protocol, handleLinkUrl } = props;
 
     const focusRef = React.useRef<HTMLHeadingElement>(null);
     React.useEffect(() => {
@@ -103,6 +108,7 @@ const Progression = (props: {
             focusRef.current.focus();
         }
     }, [focusWhereAmI]);
+    const [__] = useTranslator();
 
     if (typeof locatorExt?.locator?.locations?.progression === "number") {
 
@@ -166,7 +172,7 @@ const Progression = (props: {
                     txtPagination = __("reader.navigation.currentPage", { current: `${pageNum}` });
                 }
 
-                // see (locations as any ).totalProgression Divina HACK
+                // SEE isDivinaLocation duck typing hack with totalProgression injection!!
                 if (typeof locatorExt.locator.locations.progression === "number") {
                     const percent = Math.round(locatorExt.locator.locations.progression * 100);
                     txtProgression = `${percent}%`;
@@ -360,9 +366,7 @@ const ProgressionDetails: React.FC<{summary: React.ReactElement[], details: Reac
 
 export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> = (props) => {
 
-    // tslint:disable-next-line: max-line-length
-    const { closeDialogCb, readerReadingLocation, pdfPlayerNumberOfPages, divinaNumberOfPages, divinaContinousEqualTrue, r2Publication: r2Publication_, manifestUrlR2Protocol, handleLinkUrl, publicationViewMaybeOpds, ControlComponent, TagManagerComponent, translator, onClikLinkCb, focusWhereAmI } = props;
-    const __ = translator.translate;
+    const { closeDialogCb, readerReadingLocation, pdfPlayerNumberOfPages, divinaNumberOfPages, divinaContinousEqualTrue, r2Publication: r2Publication_, manifestUrlR2Protocol, handleLinkUrl, publicationViewMaybeOpds, ControlComponent, TagManagerComponent, onClikLinkCb, focusWhereAmI } = props;
 
     const r2Publication = React.useMemo(() => {
         if (!r2Publication_ && publicationViewMaybeOpds.r2PublicationJson) {
@@ -375,12 +379,14 @@ export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> =
 
     }, [publicationViewMaybeOpds, r2Publication_]);
 
-    const pubTitleLangStr = convertMultiLangStringToString(translator, (publicationViewMaybeOpds as PublicationView).publicationTitle || publicationViewMaybeOpds.documentTitle);
+    const locale = useSelector((state: ICommonRootState) => state.i18n.locale);
+    const pubTitleLangStr = convertMultiLangStringToLangString((publicationViewMaybeOpds as PublicationView).publicationTitle || publicationViewMaybeOpds.documentTitle, locale);
     const pubTitleLang = pubTitleLangStr && pubTitleLangStr[0] ? pubTitleLangStr[0].toLowerCase() : "";
     const pubTitleIsRTL = langStringIsRTL(pubTitleLang);
     const pubTitleStr = pubTitleLangStr && pubTitleLangStr[1] ? pubTitleLangStr[1] : "";
 
     const [openCoverDialog, setOpenCoverDialog] = React.useState(false);
+    const [__] = useTranslator();
 
     return (
         <>
@@ -405,7 +411,10 @@ export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> =
                             </Dialog.Trigger>
                             <Dialog.Portal>
                                 {/* <div className={stylesModals.modal_dialog_overlay}></div> */}
-                                <Dialog.Content className={stylesModals.modal_dialog}>
+                                <Dialog.Content className={stylesModals.modal_dialog} aria-describedby={undefined}>
+                                    <VisuallyHidden.Root>
+                                        <Dialog.Title>{__("catalog.bookInfo")}</Dialog.Title>
+                                    </VisuallyHidden.Root>
                                     <div className={stylesModals.modal_dialog_body_cover}>
                                         <Cover
                                             publicationViewMaybeOpds={props.publicationViewMaybeOpds}
@@ -435,15 +444,14 @@ export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> =
                             {pubTitleStr}
                         </h2>
                         <FormatContributorWithLink
-                            contributors={publicationViewMaybeOpds.authors}
-                            translator={translator}
+                            contributors={publicationViewMaybeOpds.authorsLangString}
                             onClickLinkCb={onClikLinkCb}
                             className={"authors"}
                         />
                     </section>
 
                     <section>
-                        <PublicationInfoDescription publicationViewMaybeOpds={publicationViewMaybeOpds} __={__} translator={props.translator} />
+                        <PublicationInfoDescription publicationViewMaybeOpds={publicationViewMaybeOpds} __={__} />
                     </section>
                     <section>
                         <div className={stylePublication.publicationInfo_heading}>
@@ -452,13 +460,12 @@ export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> =
                         <div className={stylePublication.publicationInfo_moreInfo_content}>
                             <FormatPublisherDate publicationViewMaybeOpds={publicationViewMaybeOpds} __={__} />
                             {
-                                publicationViewMaybeOpds.publishers?.length ?
+                                publicationViewMaybeOpds.publishersLangString?.length ?
                                     <div>
                                         <strong>{`${__("catalog.publisher")}: `}</strong>
                                         <span className={stylesBookDetailsDialog.allowUserSelect}>
                                             <FormatContributorWithLink
-                                                contributors={publicationViewMaybeOpds.publishers}
-                                                translator={translator}
+                                                contributors={publicationViewMaybeOpds.publishersLangString}
                                                 onClickLinkCb={onClikLinkCb}
                                             />
                                         </span>
@@ -506,7 +513,8 @@ export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> =
                             <h4>{__("publication.accessibility.name")}</h4>
                         </div>
                         <div className={stylePublication.accessibility_infos}>
-                            <PublicationInfoA11y publicationViewMaybeOpds={publicationViewMaybeOpds}></PublicationInfoA11y>
+                            {/* <PublicationInfoA11y publicationViewMaybeOpds={publicationViewMaybeOpds}></PublicationInfoA11y> */}
+                            <PublicationInfoA11y2 publicationViewMaybeOpds={publicationViewMaybeOpds} />
                         </div>
                     </section>
                     {(publicationViewMaybeOpds.lcp ? <section className={stylePublication.publicationInfo_lcpInfo_content}>
@@ -514,7 +522,6 @@ export const PublicationInfoContent: React.FC<React.PropsWithChildren<IProps>> =
                     </section> : <></>)}
                     <TagManagerComponent />
                     <Progression
-                        __={__}
                         closeDialogCb={closeDialogCb}
                         r2Publication={r2Publication}
                         manifestUrlR2Protocol={manifestUrlR2Protocol}

@@ -1,6 +1,6 @@
-/*
-=-=-= publications.scss
-*/
+.CSS_START_components_publications {
+  display: none;
+}
 
 .publication_wrapper {
   width: 200px;
@@ -28,9 +28,9 @@
   height: auto;
   align-items: start;
 
-    &:hover {
+  &:hover {
       img, .no_img_wrapper {
-			transform: rotateX(10deg);
+			  transform: rotateX(10deg);
       }
 
 			.gradient {
@@ -45,7 +45,7 @@
 
     &:hover {
       img, .no_img_wrapper {
-			transform: unset;
+			  transform: unset;
       }
     }
   }
@@ -115,6 +115,7 @@
         word-break: break-all;
         display: -webkit-inline-box;
         -webkit-line-clamp: 3;
+        line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-align: center;
@@ -351,15 +352,15 @@
     padding: 10px 50px;
     min-width: 600px;
     font-size: 0.8rem;
-  
+
     button {
       float: left;
     }
-  
+
     &:nth-child(odd) {
       background-color: #f3f3f3;
     }
-  
+
     .icon_seemore {
       position: relative;
       display: inline-block;
@@ -368,18 +369,18 @@
       margin: -5px 10px 0;
       top: 2px !important;
     }
-  
+
     p.book{
       &_title {
       display: inline-block;
       font-weight: 600;
       }
-  
+
       &_author {
         display: inline-block;
       }
     }
-  
+
     p.infos_sup {
       display: inline-block;
       width: 15%;
@@ -532,6 +533,7 @@
     word-break: break-all;
     display: -webkit-inline-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
 
     /* autoprefixer: ignore next */
     -webkit-box-orient: vertical;
@@ -596,6 +598,6 @@
   }
 }
 
-.___DEBUG___COMPONENTS_PUBLICATIONS_CSS {
+.CSS_END_components_publications {
   display: none;
 }

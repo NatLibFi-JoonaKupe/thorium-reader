@@ -13,9 +13,7 @@ import { isAudiobookFn, isDivinaFn, isPdfFn } from "readium-desktop/common/isMan
 import { inject, injectable } from "inversify";
 import * as moment from "moment";
 import { CoverView, PublicationView } from "readium-desktop/common/views/publication";
-import {
-    convertContributorArrayToStringArray,
-} from "readium-desktop/main/converter/tools/localisation";
+// import { convertContributorArrayToStringArray } from "readium-desktop/common/language-string";
 import { PublicationDocument, PublicationDocumentWithoutTimestampable } from "readium-desktop/main/db/document/publication";
 import { diSymbolTable } from "readium-desktop/main/diSymbolTable";
 import { PublicationStorage } from "readium-desktop/main/storage/publication-storage";
@@ -28,6 +26,8 @@ import { PublicationParsePromise } from "@r2-shared-js/parser/publication-parser
 import { diMainGet } from "../di";
 import { lcpLicenseIsNotWellFormed } from "readium-desktop/common/lcp";
 import { LCP } from "@r2-lcp-js/parser/epub/lcp";
+// import { type Store } from "redux";
+// import { RootState } from "../redux/states";
 
 // import { type Store } from "redux";
 // import { RootState } from "../redux/states";
@@ -197,14 +197,13 @@ export class PublicationViewConverter {
         const r2Publication = await this.unmarshallR2Publication(document);
         const r2PublicationJson = TaJsonSerialize(r2Publication); // note: does not include r2Publication.LCP
 
-        // TODO: preserve (string | IStringMap) for publishers and authors (contributors),
-        // and apply convertMultiLangStringToString() only downstream / at rendering time.
-        const publishers = convertContributorArrayToStringArray(
-            r2Publication.Metadata.Publisher,
-        );
-        const authors = convertContributorArrayToStringArray(
-            r2Publication.Metadata.Author,
-        );
+        // this.store.getState().i18n.locale
+
+        // convertMultiLangStringToLangString()
+        const publishersLangString = r2Publication.Metadata.Publisher ? r2Publication.Metadata.Publisher.map((contributor) => contributor.Name) : [];
+
+        // convertMultiLangStringToLangString()
+        const authorsLangString = r2Publication.Metadata.Author ? r2Publication.Metadata.Author.map((contributor) => contributor.Name) : [];
 
         let publishedAt: string | undefined;
         if (r2Publication.Metadata.PublicationDate) {
@@ -232,7 +231,6 @@ export class PublicationViewConverter {
 
         const duration = typeof r2Publication.Metadata.Duration === "number" ? r2Publication.Metadata.Duration : undefined;
         const nbOfTracks = typeof r2Publication.Metadata.AdditionalJSON?.tracks === "number" ? r2Publication.Metadata.AdditionalJSON?.tracks : undefined;
-
 
         const isAudio = r2Publication.Metadata.RDFType?.toLowerCase().includes("audio") || isAudiobookFn(r2Publication.Metadata) || (
             readerStateLocator?.audioPlaybackInfo
@@ -265,6 +263,9 @@ export class PublicationViewConverter {
         const readingFinished = tryCatchSync(() => state.publication.readingFinishedQueue.findIndex(([, pubIndentifier]) => pubIndentifier === document.identifier) > -1, "") || false;
 
         // console.log(`=-=-==-=-${document.title}---${JSON.stringify(r2Publication.Metadata.Title)}---${JSON.stringify(r2Publication.Metadata.SubTitle)}`);
+
+        const trimStrings = (texts: string | string[]): string[] => Array.isArray(texts) ? texts.filter((item) => item && typeof item === "string").map((item) => item.trim()) : texts && typeof texts === "string" ? [texts.trim()] : [];
+
         return {
             isAudio,
             isDivina,
@@ -275,31 +276,36 @@ export class PublicationViewConverter {
             readingFinished,
 
             // legacy vs. modern a11y metadata structure
-            a11y_accessMode: r2Publication.Metadata.Accessibility?.AccessMode || r2Publication.Metadata.AccessMode, // string[]
-            a11y_accessibilityFeature: r2Publication.Metadata.Accessibility?.Feature || r2Publication.Metadata.AccessibilityFeature, // string[]
-            a11y_accessibilityHazard: r2Publication.Metadata.Accessibility?.Hazard || r2Publication.Metadata.AccessibilityHazard, // string[]
+            a11y_accessMode: trimStrings(r2Publication.Metadata.Accessibility?.AccessMode || r2Publication.Metadata.AccessMode), // string[]
+            a11y_accessibilityFeature: trimStrings(r2Publication.Metadata.Accessibility?.Feature || r2Publication.Metadata.AccessibilityFeature), // string[]
+            a11y_accessibilityHazard: trimStrings(r2Publication.Metadata.Accessibility?.Hazard || r2Publication.Metadata.AccessibilityHazard), // string[]
 
-            a11y_certifiedBy: r2Publication.Metadata.Accessibility?.Certification?.CertifiedBy || r2Publication.Metadata.CertifiedBy, // string[]
-            a11y_certifierCredential: r2Publication.Metadata.Accessibility?.Certification?.Credential || r2Publication.Metadata.CertifierCredential, // string[]
-            a11y_certifierReport: r2Publication.Metadata.Accessibility?.Certification?.Report || r2Publication.Metadata.CertifierReport, // string[]
-            a11y_conformsTo: r2Publication.Metadata.Accessibility?.ConformsTo || r2Publication.Metadata.ConformsTo, // string[]
+            a11y_certifiedBy: trimStrings(r2Publication.Metadata.Accessibility?.Certification?.CertifiedBy || r2Publication.Metadata.CertifiedBy), // string[]
+            a11y_certifierCredential: trimStrings(r2Publication.Metadata.Accessibility?.Certification?.Credential || r2Publication.Metadata.CertifierCredential), // string[]
+            a11y_certifierReport: trimStrings(r2Publication.Metadata.Accessibility?.Certification?.Report || r2Publication.Metadata.CertifierReport), // string[]
+            a11y_conformsTo: trimStrings(r2Publication.Metadata.Accessibility?.ConformsTo || r2Publication.Metadata.ConformsTo), // string[]
 
             a11y_accessModeSufficient: r2Publication.Metadata.Accessibility?.AccessModeSufficient || r2Publication.Metadata.AccessModeSufficient, // (string[])[]
 
-            // convertMultiLangStringToString
+            // convertMultiLangStringToLangString()
             a11y_accessibilitySummary: r2Publication.Metadata.Accessibility?.Summary || r2Publication.Metadata.AccessibilitySummary, // string | IStringMap
 
             identifier: document.identifier, // preserve Identifiable identifier
 
             documentTitle: document.title || "-", // default title
-            // convertMultiLangStringToString
+
+            // convertMultiLangStringToLangString()
             publicationTitle: r2Publication.Metadata.Title, // string | IStringMap
+            // convertMultiLangStringToLangString()
             publicationSubTitle: r2Publication.Metadata.SubTitle, // string | IStringMap
 
-            authors,
+            // convertMultiLangStringToLangString()
+            publishersLangString,
+            // convertMultiLangStringToLangString()
+            authorsLangString,
+
             description: r2Publication.Metadata.Description,
             languages: r2Publication.Metadata.Language,
-            publishers,
             workIdentifier: r2Publication.Metadata.Identifier,
             publishedAt,
             modifiedAt,
@@ -309,6 +315,7 @@ export class PublicationViewConverter {
 
             lcp: document.lcp,
             lcpRightsCopies: document.lcpRightsCopies,
+            lcpRightsPrints: document.lcpRightsPrints,
 
             RDFType: r2Publication.Metadata.RDFType,
 

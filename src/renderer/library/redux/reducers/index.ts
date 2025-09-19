@@ -25,7 +25,7 @@ import { combineReducers, Reducer } from "redux";
 import { RouterState } from "redux-first-history";
 import { sessionReducer } from "readium-desktop/common/redux/reducers/session";
 import { catalogViewReducer } from "./catalog";
-import { tagReducer } from "./tag";
+import { tagReducer } from "readium-desktop/common/redux/reducers/tag";
 import { readerDefaultConfigReducer } from "readium-desktop/common/redux/reducers/reader/defaultConfig";
 import { themeReducer } from "readium-desktop/common/redux/reducers/theme";
 
@@ -33,6 +33,11 @@ import { themeReducer } from "readium-desktop/common/redux/reducers/theme";
 import { readerRTLFlipReducer } from "readium-desktop/common/redux/reducers/reader/rtlFlip";
 import { wizardReducer } from "readium-desktop/common/redux/reducers/wizard";
 import { versionUpdateReducer } from "readium-desktop/common/redux/reducers/version-update";
+import { creatorReducer } from "readium-desktop/common/redux/reducers/creator";
+import { settingsReducer } from "readium-desktop/common/redux/reducers/settings";
+import { importAnnotationReducer } from "readium-desktop/renderer/common/redux/reducers/importAnnotation";
+import { lcpReducer } from "readium-desktop/common/redux/reducers/lcp";
+import { noteExportReducer } from "readium-desktop/common/redux/reducers/noteExport";
 
 export const rootReducer = (routerReducer: Reducer<RouterState>) => { // : Reducer<Partial<ILibraryRootState>>
     return combineReducers({ // ILibraryRootState
@@ -86,5 +91,10 @@ export const rootReducer = (routerReducer: Reducer<RouterState>) => { // : Reduc
             tag: tagReducer,
         }),
         wizard: wizardReducer,
+        creator: creatorReducer,
+        settings: settingsReducer,
+        importAnnotations: importAnnotationReducer,
+        lcp: lcpReducer,
+        noteExport: noteExportReducer,
     });
 };

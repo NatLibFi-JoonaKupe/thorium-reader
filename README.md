@@ -6,7 +6,9 @@ Free application. No ads. No private data flowing anywhere.
 
 This project is in constant evolution, corrections and new features will be added soon and your support is welcome for that. The application is based on the open-source Readium Desktop toolkit.
 
-It is currently localized in following 25 languages:
+More information can be found in the [Landing page](https://thorium.edrlab.org/), within the [online support documentation](https://thorium.edrlab.org/en/th3/800_collaborating/802_localizing/). Users can [Add Documentation catalog to Thorium (OPDS link)](opds://edrlab.github.io/publications/feeds/thorium31_documentation.json) or [browse English documentation inline within the Readium web reader](https://thorium.edrlab.org/en/onlinedoc).
+
+It is currently localized in following 28 languages:
 
 * (en) English
 * (fr) Français (French)
@@ -33,8 +35,16 @@ It is currently localized in following 25 languages:
 * (hr) Hrvatski (Croatian)
 * (da) Dansk (Danish)
 * (sl) Slovenščina (Slovene)
+* (cs) čeština (Czech)
+* (ar) عَرَبِيّ (Arabic)
 
-See: https://github.com/edrlab/thorium-reader/wiki/Localization-(l10n)-language-translations
+Since february 2025 we use Weblate project Thorium as the main tool for localisation. The following bar chart shows the translation status that is available from weblate.
+
+<a href="https://hosted.weblate.org/engage/thorium-reader/">
+<img src="https://hosted.weblate.org/widget/thorium-reader/thorium-reader-translation/horizontal-auto.svg" alt="Translation status" />
+</a>
+
+More information on translation process can be found in the dedicated [translation page of the support website](https://thorium.edrlab.org/en/th3/800_collaborating/802_localizing/).
 
 ![library](img/library.png)
 ![publication info](img/info.png)
@@ -42,8 +52,11 @@ See: https://github.com/edrlab/thorium-reader/wiki/Localization-(l10n)-language-
 
 ## Prerequisites
 
-1) NodeJS 18 (check with `node --version`)
-2) NPM 9 (check with `npm --version`)
+1) NodeJS 22 (check with `node --version`)
+2) NPM 11 (check with `npm --version`)
+
+
+**TIP**: the default version of NPM that ships with the NodeJS installer may be slightly old, so make sure to update with `npm i -g npm@latest`, or `nvm install-latest-npm` if you are an NVM user.
 
 ## Technologies
 
@@ -58,7 +71,7 @@ See: https://github.com/edrlab/thorium-reader/wiki/Localization-(l10n)-language-
 
 ### Install dependencies
 
-* `npm install` (or `npm ci`): initialize local `node_modules` packages from dependencies declared in `package.json` (this will also automatically call a long-running compilation stage in `npm run postinstall`)
+* `npm install --foreground-scripts` (or `npm ci --foreground-scripts`): initialize local `node_modules` packages from dependencies declared in `package.json` (this will also automatically call a long-running compilation stage in `npm run postinstall`)
 * in case of failure to NPM "install" because of "Divina player" SHA integrity mismatch, please try running the following command in your shell: `node scripts/package-lock-patch.js && cat package-lock.json | grep -i divina-player-js`
 
 ### Start application in development environment

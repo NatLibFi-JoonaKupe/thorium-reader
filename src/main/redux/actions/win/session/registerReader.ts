@@ -8,7 +8,7 @@
 import { BrowserWindow, Rectangle } from "electron";
 import { Action } from "readium-desktop/common/models/redux";
 import { locatorInitialState } from "readium-desktop/common/redux/states/locatorInitialState";
-import { IReaderStateReader } from "readium-desktop/common/redux/states/renderer/readerRootState";
+import { IReaderStateReaderSession, IReaderStateReaderPersistence } from "readium-desktop/common/redux/states/renderer/readerRootState";
 import { PublicationView } from "readium-desktop/common/views/publication";
 import { diMainGet } from "readium-desktop/main/di";
 import { v4 as uuidv4 } from "uuid";
@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
     convertHttpUrlToCustomScheme, READIUM2_ELECTRON_HTTP_PROTOCOL,
 } from "@r2-navigator-js/electron/common/sessions";
+import { readerConfigInitialState } from "readium-desktop/common/redux/states/reader";
 
 export const ID = "WIN_SESSION_REGISTER_READER";
 
@@ -26,7 +27,7 @@ export interface Payload {
     winBound: Rectangle;
     filesystemPath: string;
     manifestUrl: string;
-    reduxStateReader: IReaderStateReader;
+    reduxStateReader: IReaderStateReaderSession;
 }
 
 export function build(
@@ -36,21 +37,22 @@ export function build(
     manifestUrl: string,
     filesystemPath: string,
     winBound: Rectangle,
-    reduxStateReader?: IReaderStateReader,
+    reduxStateReader: Partial<IReaderStateReaderPersistence>,
     identifier: string = uuidv4()):
     Action<typeof ID, Payload> {
 
     // we lose purity !!
     const store = diMainGet("store");
-    const readerConfigDefault = store.getState().reader.defaultConfig;
+
     const disableRTLFlip = store.getState().reader.disableRTLFlip;
 
     const manifestUrlR2Protocol = manifestUrl.startsWith(READIUM2_ELECTRON_HTTP_PROTOCOL)
         ? manifestUrl : convertHttpUrlToCustomScheme(manifestUrl);
 
-    reduxStateReader = {
+    const reduxStateReaderHydrated: IReaderStateReaderSession = {
         ...{
-            config: readerConfigDefault,
+            // see issue https://github.com/edrlab/thorium-reader/issues/2532
+            config: readerConfigInitialState,
             disableRTLFlip,
             locator: locatorInitialState,
         },
@@ -65,7 +67,8 @@ export function build(
                 publicationView,
                 navigator: undefined,
             },
-        },
+            lock: false,
+        },          
     };
 
     return {
@@ -77,7 +80,7 @@ export function build(
             filesystemPath,
             winBound,
             identifier,
-            reduxStateReader,
+            reduxStateReader: reduxStateReaderHydrated,
         },
     };
 }

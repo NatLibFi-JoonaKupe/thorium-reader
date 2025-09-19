@@ -12,6 +12,7 @@ export const acceptedExtensionObject = {
     lcpLicence: ".lcpl",
     epub: ".epub",
     epub3: ".epub3",
+    pnld: ".pnld",
     audiobook: ".audiobook",
     webpub: ".webpub",
     audiobookLcp: ".lcpa",
@@ -40,4 +41,4 @@ export const acceptedExtension = (ext: string) =>
 export const isAcceptedExtension = (key: keyof typeof acceptedExtensionObject, ext: string) =>
     (new RegExp(`${acceptedExtensionObject[key]
         ? acceptedExtensionObject[key].replace(/\./g, "\\.")
-        : acceptedExtensionObject[key]}$`)).test(ext);
+        : acceptedExtensionObject[key]}$`, "i")).test(ext);

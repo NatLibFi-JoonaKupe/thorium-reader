@@ -9,7 +9,8 @@ import { TPublication } from "readium-desktop/common/type/publication.type";
 import { IOpdsFeedView } from "readium-desktop/common/views/opds";
 import { PublicationView } from "readium-desktop/common/views/publication";
 
-import { LocatorExtended } from "@r2-navigator-js/electron/renderer";
+import { MiniLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
+import { IReaderDialogOrDockSettingsMenuState } from "./reader";
 
 interface IPubInfoState {
     publication?: TPublication;
@@ -20,7 +21,7 @@ interface IPubInfoStateReader extends IPubInfoState {
     pdfPlayerNumberOfPages: number | undefined; // super hacky :(
     divinaNumberOfPages: number | undefined; // super hacky :(
     divinaContinousEqualTrue: boolean;
-    readerReadingLocation: LocatorExtended;
+    readerReadingLocation: MiniLocatorExtended;
     handleLinkUrl: ((url: string) => void) | undefined;
 }
 
@@ -43,9 +44,13 @@ export enum DialogTypeName {
     LsdReturnConfirm = "lsd-return-confirm",
     LsdRenewConfirm = "lsd-renew-confirm",
     AboutThorium = "about-thorium",
+    ReaderMenu = "reader-menu",
+    ReaderSettings = "reader-settings",
 }
 
 export interface DialogType {
+    [DialogTypeName.ReaderMenu]: IReaderDialogOrDockSettingsMenuState,
+    [DialogTypeName.ReaderSettings]: IReaderDialogOrDockSettingsMenuState,
     [DialogTypeName.FileImport]: {
         files: IFileImport[];
     };

@@ -8,6 +8,7 @@
 import * as apiActions from "./api/";
 import * as authActions from "./auth";
 import * as dialogActions from "./dialog/";
+import * as dockActions from "./dock/";
 import * as downloadActions from "./download/";
 import * as historyActions from "./history";
 import * as i18nActions from "./i18n/";
@@ -15,7 +16,6 @@ import * as importActions from "./import/";
 import * as keyboardActions from "./keyboard/";
 import * as lcpActions from "./lcp/";
 import * as loadActions from "./load";
-import * as netActions from "./net/";
 import * as readerActions from "./reader/";
 import * as toastActions from "./toast/";
 import * as sessionActions from "./session/";
@@ -25,14 +25,17 @@ import * as themeActions from "./theme";
 import * as wizardActions from "./wizard";
 import * as versionUpdateActions from "./version-update";
 import * as annotationActions from "./annotation";
+import * as creatorActions from "./creator";
+import * as settingsActions from "./settings";
+import * as noteExport from "./noteExport";
 
 export {
     historyActions,
     authActions,
     apiActions,
     dialogActions,
+    dockActions,
     i18nActions,
-    netActions,
     readerActions,
     lcpActions,
     importActions,
@@ -47,4 +50,7 @@ export {
     wizardActions,
     versionUpdateActions,
     annotationActions,
+    creatorActions,
+    settingsActions,
+    noteExport,
 };

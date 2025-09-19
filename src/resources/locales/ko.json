@@ -6,7 +6,6 @@
         "leftSlideButton": "목록 왼쪽으로 밀기 ",
         "mainContent": "메인 콘텐츠",
         "rightSlideButton": "목록 오른쪽으로 밀기",
-        "searchBook": "제목으로 검색",
         "skipLink": "콘텐츠로 건너뛰기",
         "toolbar": "툴바"
     },
@@ -21,6 +20,7 @@
             "copy": "복사",
             "cut": "잘라내기",
             "paste": "붙여넣기",
+            "print": "",
             "redo": "다시 실행",
             "selectAll": "모두 선택",
             "title": "수정",
@@ -35,6 +35,7 @@
                         "no": "취소",
                         "yes": "확인"
                     },
+                    "help": "",
                     "message": "세션을 저장하시겠습니까?",
                     "title": "세션 저장"
                 }
@@ -69,13 +70,12 @@
         "emptyTagList": "태그를 지정한 전자책이 없습니다.",
         "entry": {
             "continueReading": "이어서 읽기",
-            "continueReadingAudioBooks": "오디오북 이어 듣기",
-            "continueReadingDivina": "Divina 이어 보기",
-            "continueReadingPdf": "PDF 이어 보기",
             "lastAdditions": "최근에 추가한 도서"
         },
         "export": "내보내기",
+        "exportAnnotation": "",
         "format": "포맷",
+        "importAnnotation": "",
         "lang": "언어선택",
         "lastRead": "최근 읽은 자료",
         "moreInfo": "상세정보",
@@ -117,14 +117,30 @@
         "released": "발행일",
         "sort": "정렬 기준",
         "tag": "",
-        "tagCount": "태그 개수",
         "tags": "태그",
         "update": "편집"
     },
     "dialog": {
+        "annotations": {
+            "descAuthor": "",
+            "descCreator": "",
+            "descList": "",
+            "descNewer": "",
+            "descOlder": "",
+            "descTitle": "",
+            "importAll": "",
+            "importWithoutConflict": "",
+            "origin": "",
+            "title": ""
+        },
         "cancel": "취소",
+        "deleteAnnotations": "",
+        "deleteAnnotationsText": "",
+        "deleteBookmarks": "",
+        "deleteBookmarksText": "",
         "deleteFeed": "카탈로그를 제거하겠습니까?",
         "deletePublication": "출판물을 제거하겠습니까?",
+        "deletePublicationWithNotes": "",
         "import": "파일들을 열겠습니까:",
         "importError": "오류가 발생했습니다. 파일 확장자를 확인하십시오. ({{acceptedExtension}})",
         "renew": "출판물의 라이선스를 갱신하겠습니까?",
@@ -157,7 +173,8 @@
     },
     "library": {
         "lcp": {
-            "hint": "(힌트: {{- hint}})",
+            "hint": "힌트: ",
+            "open": "",
             "password": "암호",
             "sentence": "이 출판물을 열기 위해서는 LCP 암호가 필요합니다: ",
             "urlHint": "암호를 잊으셨습니까? 여기서 도움말을 확인하십시오",
@@ -167,6 +184,14 @@
         }
     },
     "message": {
+        "annotations": {
+            "alreadyImported": "",
+            "emptyFile": "",
+            "errorParsing": "",
+            "noBelongTo": "",
+            "nothing": "",
+            "success": ""
+        },
         "download": {
             "error": "{{- title}} 다운로드 실패하였습니다: [{{- err}}]"
         },
@@ -223,6 +248,297 @@
         },
         "whatIsOpds": ""
     },
+    "publ-a11y-display-guide": {
+        "accessibility-summary": {
+            "accessibility-summary-title": ""
+        },
+        "additional-accessibility-information": {
+            "additional-accessibility-information-aria": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-audio-descriptions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-braille": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-full-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-foreground-and-background-audio": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-text-and-background": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-large-print": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-page-breaks": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-sign-language": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-graphics": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-objects": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-text-to-speech-hinting": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-title": ""
+        },
+        "conformance": {
+            "conformance-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-certifier": {
+                "compact": ""
+            },
+            "conformance-certifier-credentials": {
+                "compact": ""
+            },
+            "conformance-details-certifier-report": {
+                "compact": ""
+            },
+            "conformance-details-claim": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-0": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-0": {
+                "compact": ""
+            },
+            "conformance-details-wcag-2-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-2": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-no": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-title": "",
+            "conformance-unknown-standard": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "hazards": {
+            "hazards-flashing": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-title": "",
+            "hazards-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "navigation": {
+            "navigation-index": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-page-navigation": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-structural": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-title": "",
+            "navigation-toc": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "rich-content": {
+            "rich-content-accessible-chemistry-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-chemistry-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-described": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-closed-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-extended": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-open-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-title": "",
+            "rich-content-transcript": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "ways-of-reading": {
+            "ways-of-reading-nonvisual-reading-alt-text": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-not-fully": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-readable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-complementary": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-only": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-synchronized": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-title": "",
+            "ways-of-reading-visual-adjustments-modifiable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-visual-adjustments-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        }
+    },
     "publication": {
         "accessibility": {
             "accessModeSufficient": {
@@ -270,15 +586,17 @@
         "duration": {
             "title": "트랙 시간"
         },
+        "encryptedNoLicense": "",
         "expired": "",
         "expiredLcp": "이 책은 LCP 라이선스가 만료되어서 읽을 수 없습니다",
+        "incorrectPassphrase": "",
         "lcpEnd": "종료",
         "lcpRightsCopy": "복사된 문자",
         "lcpRightsPrint": "인쇄된 페이지",
         "lcpStart": "시작",
         "licenceLCP": "",
+        "licenseCertificateDateInvalid": "라이선스 서명날짜가 유효하지 않습니다 ({{- dateTime}})",
         "licenseOutOfDate": "라이선스가 만료되었습니다",
-        "licenseSignatureDateInvalid": "라이선스 서명날짜가 유효하지 않습니다",
         "licenseSignatureInvalid": "라이선스 서명이 유효하지 않습니다",
         "licensed": "",
         "markAsRead": "",
@@ -304,12 +622,44 @@
             "Color": "",
             "addNote": "",
             "advancedMode": "",
+            "annotationsExport": {
+                "description": "",
+                "title": ""
+            },
             "annotationsOptions": "",
+            "date": "",
+            "export": "",
+            "filter": {
+                "all": "",
+                "filterByColor": "",
+                "filterByCreator": "",
+                "filterByDrawtype": "",
+                "filterByTag": "",
+                "filterOptions": "",
+                "none": ""
+            },
+            "hide": "",
             "highlight": "",
             "noSelectionToast": "",
+            "note": "",
             "quickAnnotations": "",
             "saveNote": "",
-            "toggleMarginMarks": ""
+            "sorting": {
+                "lastcreated": "",
+                "lastmodified": "",
+                "progression": "",
+                "sortingOptions": ""
+            },
+            "toggleMarginMarks": "",
+            "type": {
+                "outline": "",
+                "solid": "",
+                "strikethrough": "",
+                "underline": ""
+            }
+        },
+        "bookmarks": {
+            "index": ""
         },
         "divina": {
             "mute": "오디오 음소거",
@@ -317,6 +667,13 @@
         },
         "fxl": {
             "fit": ""
+        },
+        "goToContent": "",
+        "imgViewer": {
+            "title": "",
+            "zoomIn": "",
+            "zoomOut": "",
+            "zoomReset": ""
         },
         "marks": {
             "annotations": "주석",
@@ -334,6 +691,10 @@
             "activate": "소리내어 읽기 활성화",
             "captions": "캡션/클린 뷰",
             "captionsDescription": "",
+            "disableContinuousPlay": "",
+            "disableContinuousPlayDescription": "",
+            "ignoreAndUseTTS": "",
+            "ignoreAndUseTTSDescription": "",
             "next": "다음 읽기",
             "pause": "읽기 멈춤",
             "play": "읽기 재생",
@@ -345,17 +706,19 @@
             "title": "소리내어 읽기"
         },
         "navigation": {
+            "ZenModeExit": "",
+            "ZenModeTitle": "",
             "annotationTitle": "",
             "backHomeTitle": "내서재로 돌아가기",
             "bookmarkTitle": "북마크",
             "currentPage": "현재 페이지: {{- current}}",
             "currentPageTotal": "현재 페이지: {{- current}}/{{- total}}",
             "detachWindowTitle": "라이브러리 / 내서재 창 보기",
-            "fullscreenTitle": "전체 화면모드 열기",
             "goTo": "이동",
             "goToError": "페이지 구분이 존재하지 않습니다.",
             "goToPlaceHolder": "페이지 번호를 입력하세요.",
             "goToTitle": "페이지로 이동",
+            "history": "",
             "historyNext": "앞으로 이동",
             "historyPrevious": "뒤로 이동",
             "infoTitle": "정보",
@@ -363,7 +726,21 @@
             "openTableOfContentsTitle": "탐색",
             "page": "",
             "pdfscalemode": "페이지 또는 너비 맞춤",
+            "print": "",
+            "printDisabled": "",
+            "screenNext": "",
+            "screenPrevious": "",
             "settingsTitle": "설정"
+        },
+        "notes": {
+            "colors": {
+                "cyan": "",
+                "green": "",
+                "orange": "",
+                "purple": "",
+                "red": "",
+                "yellow": ""
+            }
         },
         "picker": {
             "search": {
@@ -377,6 +754,24 @@
             },
             "searchTitle": "검색:"
         },
+        "print": {
+            "descriptionLcpCount": "",
+            "descriptionLcpPrintable": "",
+            "howTo": "",
+            "lcpInfo": "",
+            "noPagesLcpLimitReached": "",
+            "noPrintablePages": "",
+            "pageHelpInfo": "",
+            "pageHelpInfo1": "",
+            "pageHelpInfo2": "",
+            "pageHelpInfo3": "",
+            "pageHelpInfo4": "",
+            "pages": "",
+            "preview": "",
+            "print": "",
+            "printablePages": "",
+            "title": ""
+        },
         "settings": {
             "column": {
                 "auto": "자동",
@@ -384,6 +779,7 @@
                 "title": "단",
                 "two": "2단"
             },
+            "customFontSelected": "",
             "customizeReader": "",
             "disabled": "",
             "display": "디스플레이",
@@ -398,9 +794,11 @@
             "letterSpacing": "문자 간격",
             "lineSpacing": "줄 간격",
             "margin": "여백",
+            "mathjax": "",
             "noFootnotes": "각주 비활성화",
             "noRTLFlip": "",
             "noRuby": "",
+            "noTemporaryNavTargetOutline": "",
             "paginated": "페이지 매김",
             "paraSpacing": "단락 간격",
             "pdfZoom": {
@@ -415,6 +813,16 @@
                     "width": "너비 맞춤"
                 },
                 "title": "확대/축소"
+            },
+            "preset": {
+                "apply": "",
+                "applyDetails": "",
+                "detail": "",
+                "reset": "",
+                "resetDetails": "",
+                "save": "",
+                "saveDetails": "",
+                "title": ""
             },
             "preview": "",
             "reduceMotion": "모션 줄이기",
@@ -445,8 +853,9 @@
         },
         "tts": {
             "activate": "텍스트 음성 변환 할성화",
-            "default": "음성:시스템 기본값",
+            "language": "",
             "next": "다음",
+            "options": "",
             "pause": "멈춤",
             "play": "재생",
             "previous": "이전",
@@ -458,7 +867,17 @@
         }
     },
     "settings": {
+        "annotationCreator": {
+            "creator": "",
+            "help": "",
+            "name": "",
+            "organization": "",
+            "person": "",
+            "type": ""
+        },
         "auth": {
+            "help": "",
+            "title": "",
             "wipeData": "인증 데이터 삭제"
         },
         "keyboard": {
@@ -467,17 +886,250 @@
             "disclaimer": "",
             "editUserJson": "사용자 파일 편집...",
             "keyboardShortcuts": "키보드 단축키",
+            "list": {
+                "AddBookmarkWithLabel": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreate": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreateQuick": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsToggleMargin": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPlayPause": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioStop": {
+                    "description": "",
+                    "name": ""
+                },
+                "CloseReader": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomIn": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomOut": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomReset": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMain": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMainDeep": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderGotoPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigation": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationAnnotations": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationBookmarks": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationTOC": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderSettings": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusToolbar": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToBegin": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToEnd": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfo": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "Print": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SpeakReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleBookmark": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleReaderFullscreen": {
+                    "description": "",
+                    "name": ""
+                }
+            },
             "loadUserJson": "사용자 파일에서 로드",
+            "noShortcutFound": "",
             "resetDefaults": "재설정(기본값 로드)",
-            "save": "저장"
+            "save": "저장",
+            "searchPlaceholder": ""
         },
         "language": {
             "languageChoice": "언어 선택"
         },
+        "library": {
+            "enableAPIAPP": "",
+            "title": ""
+        },
+        "note": {
+            "export": {
+                "applyDefaultTemplate": "",
+                "enableCheckbox": "",
+                "overrideHTMLTemplate": ""
+            }
+        },
         "session": {
-            "no": "비활성화",
-            "title": "세션 저장",
-            "yes": "활성화"
+            "title": "세션 저장"
         },
         "tabs": {
             "appearance": "",
@@ -490,6 +1142,29 @@
             "description": "",
             "light": "",
             "title": ""
+        }
+    },
+    "tts": {
+        "highlight": {
+            "mainColor": "",
+            "maskBlockWordOutline": "",
+            "maskBlockWordSolidBackground": "",
+            "maskBlockWordUnderline": "",
+            "maskWordOutline": "",
+            "maskWordSolidBackground": "",
+            "maskWordUnderline": "",
+            "outlineWordOutline": "",
+            "outlineWordSolidBackground": "",
+            "outlineWordUnderline": "",
+            "preview": "",
+            "solidBackgroundWordOutline": "",
+            "solidBackgroundWordSolidBackground": "",
+            "solidBackgroundWordUnderline": "",
+            "style": "",
+            "underlineWordOutline": "",
+            "underlineWordSolidBackground": "",
+            "underlineWordUnderline": "",
+            "wordColor": ""
         }
     },
     "wizard": {

@@ -5,9 +5,23 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
-import { ISearchDocument, ISearchResult } from "readium-desktop/utils/search/search.interface";
-
+import { IRangeInfo } from "@r2-navigator-js/electron/common/selection";
 import { IHighlightBaseState } from "./highlight";
+
+export interface ISearchResult {
+    rangeInfo: IRangeInfo;
+
+    cleanBefore: string;
+    cleanText: string;
+    cleanAfter: string;
+
+    // rawBefore: string;
+    // rawText: string;
+    // rawAfter: string;
+
+    href: string;
+    uuid: string;
+}
 
 export interface ISearchState {
     enable: boolean;
@@ -16,7 +30,6 @@ export interface ISearchState {
     newFocusUUId: IHighlightBaseState["uuid"];
     oldFocusUUId: IHighlightBaseState["uuid"];
     foundArray: ISearchResult[];
-    cacheArray: ISearchDocument[];
 }
 
 export const searchDefaultState = (): ISearchState =>
@@ -27,5 +40,4 @@ export const searchDefaultState = (): ISearchState =>
         newFocusUUId: "",
         oldFocusUUId: "",
         foundArray: [],
-        cacheArray: [],
     });

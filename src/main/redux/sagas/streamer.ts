@@ -13,14 +13,15 @@ import { error } from "readium-desktop/main/tools/error";
 import { streamerActions } from "readium-desktop/main/redux/actions";
 import { RootState } from "readium-desktop/main/redux/states";
 import {
-    streamerRemovePublications, THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL,
+    streamerRemovePublications,
 } from "readium-desktop/main/streamer/streamerNoHttp";
 import { SagaIterator } from "redux-saga";
 // eslint-disable-next-line local-rules/typed-redux-saga-use-typed-effects
 import { all, put } from "redux-saga/effects";
 import { call as callTyped, select as selectTyped } from "typed-redux-saga/macro";
+import { THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL, THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL__IP_ORIGIN_STREAMER } from "readium-desktop/common/streamerProtocol";
 
-// import * as portfinder from "portfinder";
+// import * as portfinder from_"portfinder";
 // import { Server } from "@r2-streamer-js/http/server";
 // import { _USE_HTTP_STREAMER } from "readium-desktop/preprocessor-directives";
 
@@ -46,8 +47,8 @@ function* startRequest(): SagaIterator {
     try {
         // const streamerUrl = _USE_HTTP_STREAMER ?
         //     yield* callTyped(() => startStreamer(streamer)) :
-        //     `${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL}://0.0.0.0`;
-        const streamerUrl = `${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL}://0.0.0.0`;
+        //     `${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL}://${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL__IP_ORIGIN_STREAMER}`;
+        const streamerUrl = `${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL}://${THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL__IP_ORIGIN_STREAMER}`;
 
         yield put(streamerActions.startSuccess.build(streamerUrl));
     } catch (error) {

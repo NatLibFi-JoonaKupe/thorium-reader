@@ -6,37 +6,45 @@
 // ==LICENSE-END==
 
 import { ReaderConfig, ReaderConfigPublisher, ReaderInfo, ReaderMode } from "readium-desktop/common/models/reader";
-import { IRendererCommonRootState } from "readium-desktop/common/redux/states/rendererCommonRootState";
+import { IRendererCommonRootState, IRendererCommonRootStateHydration } from "readium-desktop/common/redux/states/rendererCommonRootState";
 import { IDivinaState } from "readium-desktop/common/redux/states/renderer/divina";
 import { IHighlightHandlerState, IHighlightMounterState } from "./highlight";
-import { IPickerState } from "./picker";
 import { ISearchState } from "./search";
 import { TMapState } from "readium-desktop/utils/redux-reducers/map.reducer";
 
 // import { IHighlight } from "@r2-navigator-js/electron/common/highlight";
-import { LocatorExtended } from "@r2-navigator-js/electron/renderer";
 
-import { TBookmarkState } from "../bookmark";
+import { MiniLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
+
+// import { TBookmarkState } from "../bookmark";
 import { IRTLFlipState } from "./rtlFlip";
-import { IAnnotationModeState, TAnnotationState } from "./annotation";
+import { IAnnotationModeState /*TAnnotationState,*/ } from "./annotation";
 import { ITTSState } from "readium-desktop/renderer/reader/redux/state/tts";
 import { IMediaOverlayState } from "readium-desktop/renderer/reader/redux/state/mediaOverlay";
 import { IAllowCustomConfigState } from "readium-desktop/renderer/reader/redux/state/allowCustom";
+import { IImageClickState } from "readium-desktop/renderer/reader/redux/state/imageClick";
+import { DockState } from "../dock";
+import { IBookmarkTotalCountState } from "readium-desktop/renderer/reader/redux/state/bookmarkTotalCount";
+import { INoteState } from "./note";
 
 export interface IReaderRootState extends IRendererCommonRootState {
     reader: IReaderStateReader;
-    picker: IPickerState;
     search: ISearchState;
     mode: ReaderMode;
     annotation: IAnnotationModeState;
+    noteTagsIndex: Array<{ tag: string, index: number }>;
+    img: IImageClickState; // TODO: replace by dock/dialog state
+    dock: DockState;
+    // cf dialog state in common
 }
 
 export interface IReaderStateReader {
     config: ReaderConfig;
     info: ReaderInfo;
-    locator: LocatorExtended;
-    bookmark: TBookmarkState;
-    annotation: TAnnotationState;
+    locator: MiniLocatorExtended;
+    // bookmark: TBookmarkState;
+    // annotation: TAnnotationState;
+    note: INoteState[],
     highlight: {
         handler: TMapState<string, IHighlightHandlerState>;
         mounter: TMapState<string, IHighlightMounterState>;
@@ -49,4 +57,16 @@ export interface IReaderStateReader {
     mediaOverlay: IMediaOverlayState;
     allowCustomConfig: IAllowCustomConfigState;
     transientConfig: ReaderConfigPublisher;
+    noteTotalCount: IBookmarkTotalCountState;
+
+
+    // got the lock
+    // acquired on first reader opened with the same publication UUID instance
+    // allow to do computation for the publication on one reader and not across reader
+    // it is a kind of Mutex in multi-threading concept
+    lock: boolean;
 }
+
+export type IReaderStateReaderPersistence = Pick<IReaderStateReader, "config" | "locator" | "divina" | "disableRTLFlip" | "note" | "allowCustomConfig" | "noteTotalCount">;
+export type IReaderStateReaderSession = Partial<IReaderStateReaderPersistence> & Pick<IReaderStateReader, "lock" | "info">;
+export type IReaderStateReaderHydration = IRendererCommonRootStateHydration & { reader: IReaderStateReaderSession };

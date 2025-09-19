@@ -18,14 +18,21 @@ import * as i18n from "./i18n";
 import * as ipc from "./ipc";
 import * as search from "./search";
 import * as winInit from "./win";
-import * as annotation from "./annotation";
+import * as noteSaga from "./note";
+import * as img from "./img";
+import * as settingsOrMenuDialogOrDock from "./settingsOrMenu";
 import { takeSpawnEvery, takeSpawnEveryChannel } from "readium-desktop/common/redux/sagas/takeSpawnEvery";
 import { setTheme } from "readium-desktop/common/redux/actions/theme";
-import { MediaOverlaysStateEnum, TTSStateEnum, mediaOverlaysListen, ttsListen } from "r2-navigator-js/dist/es8-es2017/src/electron/renderer";
+import { MediaOverlaysStateEnum, TTSStateEnum, mediaOverlaysListen, ttsListen } from "@r2-navigator-js/electron/renderer";
 import { eventChannel } from "redux-saga";
-import { put, select } from "typed-redux-saga";
-import { readerLocalActionReader, readerLocalActionSetTransientConfig } from "../actions";
+import { put as putTyped, take as takeTyped, select as selectTyped, call as callTyped, delay as delayTyped, spawn as spawnTyped } from "typed-redux-saga/macro";
+import { readerLocalActionReader } from "../actions";
+import { readerActions } from "readium-desktop/common/redux/actions";
 import { IReaderRootState } from "readium-desktop/common/redux/states/renderer/readerRootState";
+import { spawnLeading } from "readium-desktop/common/redux/sagas/spawnLeading";
+import { resourceCacheTimer } from "readium-desktop/common/redux/sagas/resourceCache";
+import { createOrGetPdfEventBus } from "../../pdf/driver";
+import { ActionWithSender, SenderType } from "readium-desktop/common/models/sync";
 
 // Logger
 const filename_ = "readium-desktop:renderer:reader:saga:index";
@@ -92,7 +99,11 @@ export function* rootSaga() {
 
         search.saga(),
 
-        annotation.saga(),
+        noteSaga.saga(),
+
+        img.saga(),
+
+        settingsOrMenuDialogOrDock.saga(),
 
         takeSpawnEvery(
             setTheme.ID,
@@ -103,7 +114,7 @@ export function* rootSaga() {
         ),
     ]);
 
-    console.log("SAGA-rootSaga() PRE INIT SUCCESS");
+    debug("SAGA-rootSaga() PRE INIT SUCCESS");
 
     const MOChannel = getMediaOverlayStateChannel();
     const TTSChannel = getTTSStateChannel();
@@ -111,40 +122,56 @@ export function* rootSaga() {
         takeSpawnEveryChannel(
             MOChannel,
             function* (state: MediaOverlaysStateEnum) {
-                yield put(readerLocalActionReader.setMediaOverlayState.build(state));
+                yield* putTyped(readerLocalActionReader.setMediaOverlayState.build(state));
             },
         ),
         takeSpawnEveryChannel(
             TTSChannel,
             function* (state: TTSStateEnum) {
-                yield put(readerLocalActionReader.setTTSState.build(state));
+                yield* putTyped(readerLocalActionReader.setTTSState.build(state));
             },
+        ),
+        spawnTyped(function*() {
+
+            let gotTheLock = yield* selectTyped((state: IReaderRootState) => state.reader.lock);
+            if (!gotTheLock) {
+                yield* takeTyped(readerActions.setTheLock.build);
+            }
+
+            gotTheLock = yield* selectTyped((state: IReaderRootState) => state.reader.lock);
+            if (!gotTheLock) {
+                throw new Error("unreachable!!!");
+            }
+
+            yield* delayTyped(1000); // wait for the reader start stabilisation (aka highlight mounting)
+
+            const notes = yield* selectTyped((state: IReaderRootState) => state.reader.note);
+            for (const note of notes) {
+
+                yield* delayTyped(10); // 100 notes equals to 1 + 1 seconds , seems acceptable to not disturb user with a tiny compute machine
+                yield* callTyped(noteSaga.noteUpdateExportSelectorFromLocatorExtended, note);
+                yield* callTyped(noteSaga.noteUpdateLocatorExtendedFromImportSelector, note);
+            }
+        }),
+        spawnLeading(resourceCacheTimer), // resourceCache memory cleaning 
+        takeSpawnEvery(
+            readerActions.print.ID,
+            function*(action: readerActions.print.TAction) {
+                const { pageRange } = action.payload;
+
+                if ((action as unknown as ActionWithSender)?.sender?.type !== SenderType.Main) {
+                    return; // expect sender as main process
+                }
+
+                debug("READER PRINT FROM RENDERER PROCESS", action.payload);
+                createOrGetPdfEventBus().dispatch("print", pageRange);
+            },
+            (e) => debug("readerActions.print", e),
         ),
     ]);
 
 
-    // Copy reader config to reader transcient config at reader start
-    const {
-        font,
-        fontSize,
-        pageMargins,
-        wordSpacing,
-        letterSpacing,
-        paraSpacing,
-        lineHeight,
-    } = yield* select((state: IReaderRootState) => state.reader.config);
-
-    yield* put(readerLocalActionSetTransientConfig.build({
-                        font,
-                        fontSize,
-                        pageMargins,
-                        wordSpacing,
-                        letterSpacing,
-                        paraSpacing,
-                        lineHeight,
-    }));
-
-    console.log("SAGA-rootSaga() INIT SUCCESS");
+    debug("SAGA-rootSaga() INIT SUCCESS");
 
     // initSuccess triggered in reader.tsx didmount and publication loaded
     // yield put(winActions.initSuccess.build());

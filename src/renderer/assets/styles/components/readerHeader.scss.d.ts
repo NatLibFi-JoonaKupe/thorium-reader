@@ -1,11 +1,15 @@
 export declare const active_svg: string;
+export declare const active_svg_option: string;
 export declare const annotationsIcon: string;
+export declare const bookmarkAdd: string;
 export declare const bookmarkButton: string;
 export declare const bookmarkIcon: string;
 export declare const bookmarkLabel: string;
 export declare const bookmarkRemove: string;
 export declare const button_arrow: string;
 export declare const button_close: string;
+export declare const CSS_END_components_readerHeader: string;
+export declare const CSS_START_components_readerHeader: string;
 export declare const form_group: string;
 export declare const menu_button: string;
 export declare const menu_option: string;

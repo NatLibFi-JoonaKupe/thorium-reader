@@ -177,6 +177,14 @@ export class PublicationStorage {
             return pathEpub3;
         }
         // --
+        const pathPnld = path.join(
+            root,
+            `book${acceptedExtensionObject.pnld}`,
+        );
+        if (fs.existsSync(pathPnld)) {
+            return pathPnld;
+        }
+        // --
         const pathDaisy = path.join(
             root,
             `book${acceptedExtensionObject.daisy}`,
@@ -191,7 +199,7 @@ export class PublicationStorage {
     public getPublicationFilename(publicationView: PublicationView) {
         const publicationPath = this.getPublicationEpubPath(publicationView.identifier);
         const extension = path.extname(publicationPath);
-        const filename = `${slugify(publicationView.documentTitle)}${extension}`;
+        const filename = `${slugify(publicationView.documentTitle).replace(/:/g, "-")}${extension}`;
         return filename;
     }
 
@@ -222,13 +230,13 @@ export class PublicationStorage {
     ): Promise<File> {
 
         const extension = path.extname(srcPath);
-        const isAudioBook = new RegExp(`\\${acceptedExtensionObject.audiobook}$`).test(extension);
-        const isAudioBookLcp = new RegExp(`\\${acceptedExtensionObject.audiobookLcp}$`).test(extension);
-        const isAudioBookLcpAlt = new RegExp(`\\${acceptedExtensionObject.audiobookLcpAlt}$`).test(extension);
-        const isWebpub = new RegExp(`\\${acceptedExtensionObject.webpub}$`).test(extension);
-        const isDivina = new RegExp(`\\${acceptedExtensionObject.divina}$`).test(extension);
-        const isLcpPdf = new RegExp(`\\${acceptedExtensionObject.pdfLcp}$`).test(extension);
-        const isDaisy = new RegExp(`\\${acceptedExtensionObject.daisy}$`).test(extension);
+        const isAudioBook = new RegExp(`\\${acceptedExtensionObject.audiobook}$`, "i").test(extension);
+        const isAudioBookLcp = new RegExp(`\\${acceptedExtensionObject.audiobookLcp}$`, "i").test(extension);
+        const isAudioBookLcpAlt = new RegExp(`\\${acceptedExtensionObject.audiobookLcpAlt}$`, "i").test(extension);
+        const isWebpub = new RegExp(`\\${acceptedExtensionObject.webpub}$`, "i").test(extension);
+        const isDivina = new RegExp(`\\${acceptedExtensionObject.divina}$`, "i").test(extension);
+        const isLcpPdf = new RegExp(`\\${acceptedExtensionObject.pdfLcp}$`, "i").test(extension);
+        const isDaisy = new RegExp(`\\${acceptedExtensionObject.daisy}$`, "i").test(extension);
 
         const ext = isAudioBook
             ? acceptedExtensionObject.audiobook
@@ -250,7 +258,7 @@ export class PublicationStorage {
                                                     : (
                                                         isDaisy
                                                             ? acceptedExtensionObject.daisy
-                                                            : acceptedExtensionObject.epub
+                                                            : acceptedExtensionObject.epub // includes .epub3 and .pnld
                                                     )
                                             )
                                     )

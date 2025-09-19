@@ -5,6 +5,11 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+// import debounce from "debounce";
+import * as debug_ from "debug";
+import * as stylesReader from "readium-desktop/renderer/assets/styles/reader-app.scss";
+import * as stylesReaderFooter from "readium-desktop/renderer/assets/styles/components/readerFooter.scss";
+import { fixedLayoutZoomPercent } from "@r2-navigator-js/electron/renderer/dom";
 import { ipcRenderer } from "electron";
 import classNames from "classnames";
 import divinaPlayer from "divina-player-js";
@@ -21,22 +26,17 @@ import {
 } from "readium-desktop/common/models/reader";
 import { ToastType } from "readium-desktop/common/models/toast";
 import { dialogActions, readerActions, toastActions } from "readium-desktop/common/redux/actions";
-import {
-    IBookmarkState, IBookmarkStateWithoutUUID,
-} from "readium-desktop/common/redux/states/bookmark";
 import { IReaderRootState } from "readium-desktop/common/redux/states/renderer/readerRootState";
 import { ok } from "readium-desktop/common/utils/assert";
 import { formatTime } from "readium-desktop/common/utils/time";
 import {
-    _APP_NAME, _APP_VERSION, _NODE_MODULE_RELATIVE_URL, _PACKAGING, _RENDERER_READER_BASE_URL,
+    _APP_NAME, _APP_VERSION, _DIST_RELATIVE_URL, _NODE_MODULE_RELATIVE_URL, _RENDERER_READER_BASE_URL,
 } from "readium-desktop/preprocessor-directives";
 import * as DoubleArrowDownIcon from "readium-desktop/renderer/assets/icons/double_arrow_down_black_24dp.svg";
 import * as DoubleArrowLeftIcon from "readium-desktop/renderer/assets/icons/double_arrow_left_black_24dp.svg";
 import * as DoubleArrowRightIcon from "readium-desktop/renderer/assets/icons/double_arrow_right_black_24dp.svg";
 import * as DoubleArrowUpIcon from "readium-desktop/renderer/assets/icons/double_arrow_up_black_24dp.svg";
 import * as exitZenModeIcon from "readium-desktop/renderer/assets/icons/fullscreenExit-icon.svg";
-import * as stylesReader from "readium-desktop/renderer/assets/styles/reader-app.scss";
-import * as stylesReaderFooter from "readium-desktop/renderer/assets/styles/components/readerFooter.scss";
 import {
     TranslatorProps, withTranslator,
 } from "readium-desktop/renderer/common/components/hoc/translator";
@@ -54,8 +54,6 @@ import {
 } from "readium-desktop/typings/react";
 import { TDispatch } from "readium-desktop/typings/redux";
 import { mimeTypes } from "readium-desktop/utils/mimeTypes";
-import { ObjectKeys } from "readium-desktop/utils/object-keys-values";
-import { Unsubscribe } from "redux";
 
 import { IEventPayload_R2_EVENT_CLIPBOARD_COPY, IEventPayload_R2_EVENT_LINK, R2_EVENT_LINK } from "@r2-navigator-js/electron/common/events";
 import {
@@ -66,15 +64,20 @@ import {
 } from "@r2-navigator-js/electron/renderer/audiobook";
 import {
     getCurrentReadingLocation, handleLinkLocator as r2HandleLinkLocator, handleLinkUrl as r2HandleLinkUrl, installNavigatorDOM,
-    isLocatorVisible, LocatorExtended, mediaOverlaysClickEnable, mediaOverlaysEnableCaptionsMode,
-    mediaOverlaysEnableSkippability, mediaOverlaysNext, mediaOverlaysPause,
+    LocatorExtended, mediaOverlaysClickEnable,
+    mediaOverlaysNext, mediaOverlaysPause,
     mediaOverlaysPlay, mediaOverlaysPlaybackRate, mediaOverlaysPrevious, mediaOverlaysResume,
     MediaOverlaysStateEnum, mediaOverlaysStop, navLeftOrRight,
     setEpubReadingSystemInfo, setKeyDownEventHandler, setKeyUpEventHandler,
     setReadingLocationSaver, ttsClickEnable, ttsNext, ttsOverlayEnable, ttsPause,
-    ttsPlay, ttsPlaybackRate, ttsPrevious, ttsResume, ttsSkippabilityEnable, ttsSentenceDetectionEnable, TTSStateEnum,
-    ttsStop, ttsVoice, highlightsClickListen,
+    ttsPlay, ttsPlaybackRate, ttsPrevious, ttsResume, ttsAndMediaOverlaysManualPlayNext, ttsSkippabilityEnable, ttsSentenceDetectionEnable, TTSStateEnum,
+    ttsStop, ttsVoices as navigatorTTSVoicesSetter,
     // stealFocusDisable,
+    keyboardFocusRequest,
+    ttsHighlightStyle,
+    mediaOverlaysEnableCaptionsMode,
+    mediaOverlaysEnableSkippability,
+    highlightsClickListen,
 } from "@r2-navigator-js/electron/renderer/index";
 import { Locator as R2Locator } from "@r2-navigator-js/electron/common/locator";
 
@@ -82,12 +85,14 @@ import { TToc } from "../pdf/common/pdfReader.type";
 import { pdfMount } from "../pdf/driver";
 import {
     readerLocalActionAnnotations,
-    readerLocalActionDivina, readerLocalActionSetConfig,
+    readerLocalActionDivina, readerLocalActionLocatorHrefChanged, readerLocalActionSetConfig,
     readerLocalActionSetLocator,
+    readerLocalActionToggleMenu,
+    readerLocalActionToggleSettings,
 } from "../redux/actions";
 import { TdivinaReadingMode, defaultReadingMode } from "readium-desktop/common/redux/states/renderer/divina";
-import optionsValues, {
-    AdjustableSettingsNumber, IReaderMenuProps, IReaderSettingsProps, isDivinaReadingMode,
+import {
+    IReaderMenuProps, IReaderSettingsProps, isDivinaReadingMode,
 } from "./options-values";
 import { URL_PARAM_CLIPBOARD_INTERCEPT, URL_PARAM_CSS, URL_PARAM_DEBUG_VISUALS, URL_PARAM_EPUBREADINGSYSTEM, URL_PARAM_GOTO, URL_PARAM_GOTO_DOM_RANGE, URL_PARAM_IS_IFRAME, URL_PARAM_PREVIOUS, URL_PARAM_REFRESH, URL_PARAM_SECOND_WEBVIEW, URL_PARAM_SESSION_INFO, URL_PARAM_WEBVIEW_SLOT } from "@r2-navigator-js/electron/renderer/common/url-params";
 
@@ -98,16 +103,30 @@ import { isAudiobookFn } from "readium-desktop/common/isManifestType";
 import { createOrGetPdfEventBus } from "readium-desktop/renderer/reader/pdf/driver";
 
 import { winActions } from "readium-desktop/renderer/common/redux/actions";
-import { diReaderGet } from "../di";
 import { apiDispatch } from "readium-desktop/renderer/common/redux/api/api";
+import { MiniLocatorExtended, minimizeLocatorExtended } from "readium-desktop/common/redux/states/locatorInitialState";
+import { translateContentFieldHelper } from "readium-desktop/common/services/translator";
+import { getStore } from "../createStore";
+import { THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL } from "readium-desktop/common/streamerProtocol";
+import { DockTypeName } from "readium-desktop/common/models/dock";
+import { TDrawView } from "readium-desktop/common/redux/states/renderer/note";
 
-// main process code!
-// thoriumhttps
-// import { THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL } from "readium-desktop/main/streamer/streamerNoHttp";
+const debug = debug_("readium-desktop:renderer:reader:components:Reader");
+debug("_");
 
+let _firstMediaOverlaysPlay = true;
+
+// TODO: key not used but translation kept for potential future use
+// discard some not used key from i18n-scan cmd
+// translate("catalog.sort")
+// translate("catalog.emptyTagList")
+// translate("reader.picker.search.results")
+
+// TODO: see MASSIVE HACK in "search" Redux Saga, needs refactoring!
 interface IWindowHistory extends History {
     _readerInstance: Reader | undefined;
     _length: number | undefined;
+    _handleLinkLocator: ((locator: R2Locator, isFromOnPopState: boolean) => void) | undefined;
 }
 const windowHistory = window.history as IWindowHistory;
 
@@ -149,7 +168,7 @@ const handleLinkUrl_UpdateHistoryState = (url: string, isFromOnPopState = false)
 
         // if (/https?:\/\//.test(url_)) {
         if (!url_.startsWith(READIUM2_ELECTRON_HTTP_PROTOCOL + "://") &&
-            !url_.startsWith("thoriumhttps://")) {
+            !url_.startsWith(THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL + "://")) {
             console.log(">> HISTORY POP STATE SKIP URL (1)", url_);
             return;
         }
@@ -169,18 +188,25 @@ const handleLinkUrl_UpdateHistoryState = (url: string, isFromOnPopState = false)
 
 const capitalizedAppName = _APP_NAME.charAt(0).toUpperCase() + _APP_NAME.substring(1);
 
-const isDivinaLocation = (data: any): data is { pageIndex: number, nbOfPages: number, locator: R2Locator } => {
+const isDivinaLocation = (data: any): data is { pageIndex: number | undefined, nbOfPages: number | undefined, locator: R2Locator } => {
 
-    return typeof data === "object"
+    // isDivinaLocationduck typing hack with totalProgression injection!!
+    const isDivina = typeof data === "object"
         // && typeof data.pageIndex === "number"
         // && typeof data.nbOfPages === "number"
         && typeof data.locator === "object"
-        && typeof data.locator.href === "string"
-        && typeof data.locator.locations === "object"
-        && typeof data.locator.locations.position === "number"
-        && typeof data.locator.locations.totalProgression === "number"
-        && data.locator.locations.totalProgression >= 0
-        && data.locator.locations.totalProgression <= 1;
+        && typeof (data.locator as R2Locator).href === "string"
+        && typeof (data.locator as R2Locator).locations === "object"
+        && typeof (data.locator as R2Locator).locations.position === "number"
+        // && typeof (data.locator as R2Locator).locations.progression === "number"
+        && typeof ((data.locator as R2Locator).locations as any).totalProgression === "number"
+        && ((data.locator as R2Locator).locations as any).totalProgression >= 0
+        && ((data.locator as R2Locator).locations as any).totalProgression <= 1
+        ;
+    if (isDivina) {
+        (data.locator as R2Locator).locations.progression = ((data.locator as R2Locator).locations as any).totalProgression;
+    }
+    return isDivina;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -195,19 +221,23 @@ interface IProps extends IBaseProps, ReturnType<typeof mapStateToProps>, ReturnT
 }
 
 interface IState {
+    previousReaderConfigAnnotationDefaultDrawView: TDrawView | undefined;
 
+    accessibilitySupportEnabled: boolean;
+
+    fxlZoomPercent: number;
     contentTableOpen: boolean;
-    settingsOpen: boolean;
+    // settingsOpen: boolean;
     shortcutEnable: boolean;
     landmarksOpen: boolean;
     landmarkTabOpen: number;
-    menuOpen: boolean;
-    doFocus: number;
+    // menuOpen: boolean;
+    // doFocus: number;
     fullscreen: boolean;
     zenMode: boolean;
+    // blackoutMask: boolean;
 
-    visibleBookmarkList: IBookmarkState[];
-    currentLocation: LocatorExtended;
+    currentLocation: MiniLocatorExtended;
 
     divinaReadingModeSupported: TdivinaReadingMode[];
     divinaNumberOfPages: number;
@@ -216,18 +246,21 @@ interface IState {
 
     pdfPlayerToc: TToc | undefined;
     pdfPlayerNumberOfPages: number | undefined;
+    pdfThumbnailImageCacheArray: string[];
 
     // openedSectionSettings: number | undefined;
-    openedSectionMenu: string;
-    annotationUUID: string;
+    // openedSectionMenu: string;
+    // annotationUUID: string;
 
     historyCanGoBack: boolean;
     historyCanGoForward: boolean;
 
-    // bookmarkMessage: string | undefined;
+    printDialogOpen: boolean;
 }
 
 class Reader extends React.Component<IProps, IState> {
+
+    private _ttsOrMoStateTimeout: NodeJS.Timeout | undefined;
 
     private fastLinkRef: React.RefObject<HTMLAnchorElement>;
     private refToolbar: React.RefObject<HTMLAnchorElement>;
@@ -240,15 +273,23 @@ class Reader extends React.Component<IProps, IState> {
     // @lazyInject(diRendererSymbolTable.translator)
     // private translator: Translator;
 
-    private unsubscribe: Unsubscribe;
-
     private ttsOverlayEnableNeedsSync: boolean;
+
+    // private resizeObserver: ResizeObserver;
+    // private blackoutDebounced: () => void;
+
+    private screenPreviousNextTimerDebounce: number | undefined;
 
     constructor(props: IProps) {
         super(props);
 
+        this.screenPreviousNextTimerDebounce = undefined;
+
+        this._ttsOrMoStateTimeout = undefined;
+
         this.ttsOverlayEnableNeedsSync = true;
 
+        this.accessibilitySupportChanged = this.accessibilitySupportChanged.bind(this);
         this.onKeyboardHistoryNavigationPrevious = this.onKeyboardHistoryNavigationPrevious.bind(this);
         this.onKeyboardHistoryNavigationNext = this.onKeyboardHistoryNavigationNext.bind(this);
         this.onKeyboardPageNavigationPrevious = this.onKeyboardPageNavigationPrevious.bind(this);
@@ -256,9 +297,9 @@ class Reader extends React.Component<IProps, IState> {
         this.onKeyboardSpineNavigationPrevious = this.onKeyboardSpineNavigationPrevious.bind(this);
         this.onKeyboardSpineNavigationNext = this.onKeyboardSpineNavigationNext.bind(this);
         this.onKeyboardFocusMain = this.onKeyboardFocusMain.bind(this);
+        this.onKeyboardFocusMainDeep = this.onKeyboardFocusMainDeep.bind(this);
         this.onKeyboardFocusToolbar = this.onKeyboardFocusToolbar.bind(this);
         this.onKeyboardFullScreen = this.onKeyboardFullScreen.bind(this);
-        this.onKeyboardBookmark = this.onKeyboardBookmark.bind(this);
         this.onKeyboardInfo = this.onKeyboardInfo.bind(this);
         this.onKeyboardInfoWhereAmI = this.onKeyboardInfoWhereAmI.bind(this);
         this.onKeyboardInfoWhereAmISpeak = this.onKeyboardInfoWhereAmISpeak.bind(this);
@@ -271,6 +312,10 @@ class Reader extends React.Component<IProps, IState> {
         this.onKeyboardNavigationToBegin.bind(this);
         this.onKeyboardNavigationToEnd.bind(this);
 
+        this.onKeyboardFixedLayoutZoomReset = this.onKeyboardFixedLayoutZoomReset.bind(this);
+        this.onKeyboardFixedLayoutZoomIn = this.onKeyboardFixedLayoutZoomIn.bind(this);
+        this.onKeyboardFixedLayoutZoomOut = this.onKeyboardFixedLayoutZoomOut.bind(this);
+
         this.onPopState = this.onPopState.bind(this);
 
         this.fastLinkRef = React.createRef<HTMLAnchorElement>();
@@ -278,19 +323,23 @@ class Reader extends React.Component<IProps, IState> {
         this.mainElRef = React.createRef<HTMLDivElement>();
 
         this.state = {
-            // bookmarkMessage: undefined,
+            accessibilitySupportEnabled: false,
+
+            previousReaderConfigAnnotationDefaultDrawView: undefined,
+
+            fxlZoomPercent: 0,
 
             contentTableOpen: false,
-            settingsOpen: false,
+            // settingsOpen: false,
             shortcutEnable: true,
             landmarksOpen: false,
             landmarkTabOpen: 0,
 
-            menuOpen: false,
+            // menuOpen: false,
             fullscreen: false,
             zenMode: false,
+            // blackoutMask: false,
 
-            visibleBookmarkList: [],
             currentLocation: undefined,
 
             divinaNumberOfPages: 0,
@@ -298,10 +347,11 @@ class Reader extends React.Component<IProps, IState> {
 
             pdfPlayerToc: undefined,
             pdfPlayerNumberOfPages: undefined,
+            pdfThumbnailImageCacheArray: [],
 
             // openedSectionSettings: undefined,
-            openedSectionMenu: "tab-toc",
-            annotationUUID: "",
+            // openedSectionMenu: "tab-toc",
+            // annotationUUID: "",
 
             divinaArrowEnabled: true,
             divinaContinousEqualTrue: false,
@@ -309,7 +359,9 @@ class Reader extends React.Component<IProps, IState> {
             historyCanGoBack: false,
             historyCanGoForward: false,
 
-            doFocus: 1,
+            // doFocus: 1,
+
+            printDialogOpen: false,
         };
 
         this.handleTTSPlay = this.handleTTSPlay.bind(this);
@@ -331,15 +383,18 @@ class Reader extends React.Component<IProps, IState> {
 
         this.showSearchResults = this.showSearchResults.bind(this);
         this.onKeyboardShowGotoPage = this.onKeyboardShowGotoPage.bind(this);
+        this.onKeyboardShowNavigationBookmarks = this.onKeyboardShowNavigationBookmarks.bind(this);
+        this.onKeyboardShowNavigationAnnotations = this.onKeyboardShowNavigationAnnotations.bind(this);
+        this.onKeyboardShowNavigationSearch = this.onKeyboardShowNavigationSearch.bind(this);
+
         this.onKeyboardShowTOC = this.onKeyboardShowTOC.bind(this);
 
-        this.handleMenuButtonClick = this.handleMenuButtonClick.bind(this);
-        this.handleSettingsClick = this.handleSettingsClick.bind(this);
+        // this.handleMenuButtonClick = this.handleMenuButtonClick.bind(this);
+        // this.handleSettingsClick = this.handleSettingsClick.bind(this);
         this.handleFullscreenClick = this.handleFullscreenClick.bind(this);
         this.handleReaderClose = this.handleReaderClose.bind(this);
         this.handleReaderDetach = this.handleReaderDetach.bind(this);
         this.handleReadingLocationChange = this.handleReadingLocationChange.bind(this);
-        this.handleToggleBookmark = this.handleToggleBookmark.bind(this);
         this.goToLocator = this.goToLocator.bind(this);
         this.handleLinkClick = this.handleLinkClick.bind(this);
         this.handlePublicationInfo = this.handlePublicationInfo.bind(this);
@@ -347,12 +402,53 @@ class Reader extends React.Component<IProps, IState> {
         this.handleDivinaSound = this.handleDivinaSound.bind(this);
 
         this.isRTLFlip = this.isRTLFlip.bind(this);
+
+        this.setZenModeAndFXLZoom = this.setZenModeAndFXLZoom.bind(this);
+
+        this.fixedLayoutZoomPercentDebounced = this.fixedLayoutZoomPercentDebounced.bind(this);
+
+        // this.blackoutDebounced = debounce(() => {
+        //     this.setState({ blackoutMask: false });
+        // }, 200).bind(this); // to match navigator 100ms timeout debouncer for fixedLayoutZoomPercent()
+
+        // const resizeDebounced = debounce(() => {
+        //     this.setState({ blackoutMask: false });
+        // }, 200); // to match navigator 100ms timeout debouncer for internal webview/iframe window "resize" event
+        // this.resizeObserver = new ResizeObserver((_entries: ResizeObserverEntry[], _observer: ResizeObserver) => { // publication_viewport
+        //     if (!this.isFixedLayout()) {
+        //         this.setState({ blackoutMask: false });
+        //         return;
+        //     }
+        //     this.setState({ blackoutMask: true });
+        //     resizeDebounced();
+        // });
+    }
+
+    private fixedLayoutZoomPercentDebounced(fxlZoomPercent: number) {
+        // this.setState({ blackoutMask: true });
+        fixedLayoutZoomPercent(fxlZoomPercent); // navigator 100ms timeout debouncer
+        // this.blackoutDebounced();
     }
 
     public async componentDidMount() {
-        windowHistory._readerInstance = this;
+        // navigatorTTSVoicesSetter(this.props.ttsVoices);
 
-        const store = diReaderGet("store"); // diRendererSymbolTable.store
+        ipcRenderer.on("accessibility-support-changed", this.accessibilitySupportChanged);
+
+        // note that "@r2-navigator-js/electron/main/browser-window-tracker"
+        // uses "accessibility-support-changed" instead of "accessibility-support-query",
+        // so there is no duplicate event handler.
+        console.log("componentDidMount() ipcRenderer.send - accessibility-support-query");
+        ipcRenderer.send("accessibility-support-query");
+
+        // if (this.mainElRef?.current) {
+        //     this.resizeObserver.observe(this.mainElRef.current);
+        // }
+
+        windowHistory._readerInstance = this;
+        windowHistory._handleLinkLocator = this.handleLinkLocator;
+
+        const store = getStore(); // diRendererSymbolTable.store
         document.body.setAttribute("data-theme", store.getState().theme.name);
 
         const handleMouseKeyboard = (isKey: boolean) => {
@@ -406,15 +502,6 @@ class Reader extends React.Component<IProps, IState> {
             handleMouseKeyboard(false);
         });
 
-        // TODO: this is a short-term hack.
-        // Can we instead subscribe to Redux action type == CloseRequest,
-        // but narrow it down specically to a reader window instance (not application-wide)
-        window.document.addEventListener("Thorium:DialogClose", (_ev: Event) => {
-            this.setState({
-                shortcutEnable: true,
-            });
-        });
-
         ensureKeyboardListenerIsInstalled();
         this.registerAllKeyboardListeners();
 
@@ -424,37 +511,32 @@ class Reader extends React.Component<IProps, IState> {
 
             this.loadPublicationIntoViewport();
 
-            createOrGetPdfEventBus().subscribe("page",
-                (pageIndex) => {
-                    // const numberOfPages = this.props.r2Publication?.Metadata?.NumberOfPages;
-                    const loc = {
-                        locator: {
-                            href: pageIndex.toString(),
-                            locations: {
-                                position: pageIndex,
-                                // progression: numberOfPages ? (pageIndex / numberOfPages) : 0,
-                                progression: 0,
-                            },
+            createOrGetPdfEventBus().subscribe("savePreferences", ({ page, scrollTop }) => {
+                const locatorExtended: LocatorExtended = {
+                    audioPlaybackInfo: undefined,
+                    paginationInfo: undefined,
+                    selectionInfo: undefined,
+                    selectionIsNew: undefined,
+                    docInfo: undefined,
+                    epubPage: undefined,
+                    epubPageID: undefined,
+                    headings: undefined,
+                    secondWebViewHref: undefined,
+                    followingElementIDs: undefined,
+                    locator: {
+                        href: `${page}`,
+                        locations: {
+                            position: scrollTop,
+                            progression: 0,
                         },
-                    };
-                    console.log("pdf pageChange", pageIndex);
+                    },
+                };
 
-                    // TODO: this is a hack! Forcing type LocatorExtended on this non-matching object shape
-                    // only "works" because data going into the persistent store (see saveReadingLocation())
-                    // is used appropriately and selectively when extracted back out ...
-                    // however this may trip / crash future code
-                    // if strict LocatorExtended model structure is expected when
-                    // reading from the persistence layer.
-                    this.handleReadingLocationChange(loc as unknown as LocatorExtended);
-                });
+                this.handleReadingLocationChange(locatorExtended);
+            });
 
             const page = this.props.locator?.locator?.href || "";
             console.log("pdf page index", page);
-
-            createOrGetPdfEventBus().subscribe("ready", () => {
-                createOrGetPdfEventBus().dispatch("page", page);
-            });
-
 
         } else if (this.props.isDivina) {
 
@@ -510,19 +592,17 @@ class Reader extends React.Component<IProps, IState> {
         } else {
             setKeyDownEventHandler(keyDownEventHandler);
             setKeyUpEventHandler(keyUpEventHandler);
-
             setReadingLocationSaver(this.handleReadingLocationChange);
             setEpubReadingSystemInfo({ name: _APP_NAME, version: _APP_VERSION });
             this.loadPublicationIntoViewport();
         }
 
-        // sets state visibleBookmarkList
-        await this.updateVisibleBookmarks();
-
-
         highlightsClickListen((href, highlight, event) => {
+            // if (this.isFixedLayout()) {
+            //     this.setState({ blackoutMask: true });
+            // }
 
-            if (highlight.group !== "annotation") {
+            if (highlight.group !== "annotation" && highlight.group !== "bookmark") {
                 if (typeof (window as any).__hightlightClickChannelEmitFn === "function") {
                     (window as any).__hightlightClickChannelEmitFn([href, highlight, event]);
                 }
@@ -532,47 +612,50 @@ class Reader extends React.Component<IProps, IState> {
             console.log("HIGHLIGHT Click from Reader.tsx");
             console.log(`href: ${href} | highlight: ${JSON.stringify(highlight, null, 4)} | event : ${JSON.stringify(event)}`);
 
-            const store = diReaderGet("store");
+            const store = getStore();
             const mounterStateMap = store.getState()?.reader.highlight.mounter;
             if (!mounterStateMap?.length) {
                 console.log(`highlightsClickListen MOUNTER STATE EMPTY -- mounterStateMap: [${JSON.stringify(mounterStateMap, null, 4)}]`);
                 return;
             }
-        
+
             const mounterStateItem = mounterStateMap.find(([_uuid, mounterState]) => mounterState.ref.id === highlight.id && mounterState.href === href);
-        
+
             if (!mounterStateItem) {
                 console.log(`highlightsClickListen CANNOT FIND MOUNTER -- href: [${href}] ref.id: [${highlight.id}] mounterStateMap: [${JSON.stringify(mounterStateMap, null, 4)}]`);
                 return;
             }
-        
+
             const [mounterStateItemUuid] = mounterStateItem; // mounterStateItem[0]
-        
+
             const handlerStateMap = store.getState()?.reader.highlight.handler;
             if (!handlerStateMap?.length) {
                 console.log(`highlightsClickListen HANDLER STATE EMPTY -- handlerStateMap: [${JSON.stringify(handlerStateMap, null, 4)}]`);
                 return;
             }
-        
+
             const handlerStateItem = handlerStateMap.find(([uuid, _handlerState]) => uuid === mounterStateItemUuid);
-        
+
             if (!handlerStateItem) {
                 console.log(`dispatchClick CANNOT FIND HANDLER -- uuid: [${mounterStateItemUuid}] handlerStateMap: [${JSON.stringify(handlerStateMap, null, 4)}]`);
                 return;
             }
-        
+
             const [uuid, handlerState] = handlerStateItem;
-        
+
             console.log(`dispatchClick CLICK ACTION ... -- uuid: [${uuid}] handlerState: [${JSON.stringify(handlerState, null, 4)}]`);
 
-            this.handleMenuButtonClick(true, "tab-annotation", true, uuid);
+            // this.handleMenuButtonClick(true, highlight.group === "annotation" ? "tab-annotation" : "tab-bookmark", true, uuid);
+            this.props.toggleMenu({open: true, section: highlight.group === "annotation" ? "tab-annotation" : "tab-bookmark", id: uuid, focus: true, edit: event.shift });
 
             if (href && handlerState.def.selectionInfo?.rangeInfo) {
                 this.handleLinkLocator({
                     href,
                     locations: {
                         cssSelector: handlerState.def.selectionInfo.rangeInfo.startContainerElementCssSelector,
-                        rangeInfo: handlerState.def.selectionInfo.rangeInfo,
+                        caretInfo: {
+                            ...handlerState.def.selectionInfo,
+                        },
                     },
                 });
             }
@@ -581,20 +664,24 @@ class Reader extends React.Component<IProps, IState> {
         this.props.dispatchReaderTSXMountedAndPublicationIntoViewportLoaded();
     }
 
-    public async componentDidUpdate(oldProps: IProps, oldState: IState) {
-        // if (oldProps.readerMode !== this.props.readerMode) {
-        // console.log("READER MODE = ", this.props.readerMode === ReaderMode.Detached ? "detached" : "attached");
-        // }
-        if (oldProps.bookmarks !== this.props.bookmarks ||
-            oldState.currentLocation !== this.state.currentLocation) {
+    public async componentDidUpdate(oldProps: IProps, _oldState: IState) {
 
-            // sets state visibleBookmarkList
-            await this.updateVisibleBookmarks();
-        }
         if (!keyboardShortcutsMatch(oldProps.keyboardShortcuts, this.props.keyboardShortcuts)) {
             console.log("READER RELOAD KEYBOARD SHORTCUTS");
             this.unregisterAllKeyboardListeners();
             this.registerAllKeyboardListeners();
+        }
+        if (this.props.readerConfig.readerDockingMode === "full" && oldProps.menuOpen === true && this.props.menuOpen === false) {
+            this.setState({shortcutEnable: true});
+        }
+        if (this.props.readerConfig.readerDockingMode === "full" && oldProps.settingsOpen === true && this.props.settingsOpen === false) {
+            this.setState({shortcutEnable: true});
+        }
+        if (this.props.readerConfig.readerDockingMode === "full" && oldProps.menuOpen === false && this.props.menuOpen === true) {
+            this.setState({shortcutEnable: false});
+        }
+        if (this.props.readerConfig.readerDockingMode === "full" && oldProps.settingsOpen === false && this.props.settingsOpen === true) {
+            this.setState({shortcutEnable: false});
         }
         if (oldProps.readerConfig.readerDockingMode !== "full" && this.props.readerConfig.readerDockingMode === "full") {
             this.setState({shortcutEnable: false});
@@ -602,16 +689,54 @@ class Reader extends React.Component<IProps, IState> {
         if (oldProps.readerConfig.readerDockingMode === "full" && this.props.readerConfig.readerDockingMode !== "full") {
             this.setState({shortcutEnable: true});
         }
+        if (oldProps.ttsState !== this.props.ttsState) {
+            if (this._ttsOrMoStateTimeout) {
+                clearTimeout(this._ttsOrMoStateTimeout);
+                this._ttsOrMoStateTimeout = undefined;
+            }
+            if (this.props.ttsState === TTSStateEnum.STOPPED) {
+                this._ttsOrMoStateTimeout = setTimeout(() => {
+                    this._ttsOrMoStateTimeout = undefined;
+                    if (this.props.ttsState === TTSStateEnum.STOPPED) {
+                        ttsClickEnable(false);
+                        this.restoreAnnotationStateAfterTTSorMOStop();
+                    }
+                }, 1000); // end of document ==> potentially "resume" (from stopped) at next document's start
+
+            } else if (oldProps.ttsState === TTSStateEnum.STOPPED && (this.props.ttsState === TTSStateEnum.PLAYING || this.props.ttsState === TTSStateEnum.PAUSED)) {
+                ttsClickEnable(true);
+                this.hideAnnotationsForTTSorMOPlay();
+            }
+        }
+        if (oldProps.mediaOverlaysState !== this.props.mediaOverlaysState) {
+            if (this._ttsOrMoStateTimeout) {
+                clearTimeout(this._ttsOrMoStateTimeout);
+                this._ttsOrMoStateTimeout = undefined;
+            }
+            if (this.props.mediaOverlaysState === MediaOverlaysStateEnum.STOPPED) {
+                this._ttsOrMoStateTimeout = setTimeout(() => {
+                    this._ttsOrMoStateTimeout = undefined;
+                    if (this.props.mediaOverlaysState === MediaOverlaysStateEnum.STOPPED) {
+                        this.restoreAnnotationStateAfterTTSorMOStop();
+                    }
+                }, 1000); // end of document ==> potentially "resume" (from stopped) at next document's start
+
+            } else if (oldProps.mediaOverlaysState === MediaOverlaysStateEnum.STOPPED && (this.props.mediaOverlaysState === MediaOverlaysStateEnum.PLAYING || this.props.mediaOverlaysState === MediaOverlaysStateEnum.PAUSED)) {
+                this.hideAnnotationsForTTSorMOPlay();
+            }
+        }
     }
 
     public componentWillUnmount() {
+        ipcRenderer.off("accessibility-support-changed", this.accessibilitySupportChanged);
+
+        // if (this.mainElRef?.current) {
+        //     this.resizeObserver.unobserve(this.mainElRef.current); // publication_viewport
+        // }
+
         this.unregisterAllKeyboardListeners();
 
         window.removeEventListener("popstate", this.onPopState);
-
-        if (this.unsubscribe) {
-            this.unsubscribe();
-        }
     }
 
     private isFixedLayout(): boolean {
@@ -628,11 +753,15 @@ class Reader extends React.Component<IProps, IState> {
                 }
             }
         }
-        if (typeof isFixedLayout === "undefined") {
-            isFixedLayout = this.props.r2Publication?.Metadata?.Rendition?.Layout === "fixed";
+        if (typeof isFixedLayout === "undefined" || isFixedLayout === null) {
+            isFixedLayout = this.state.currentLocation?.docInfo?.isFixedLayout;
+        }
+        if (typeof isFixedLayout === "undefined" || isFixedLayout === null) {
+            isFixedLayout = this.props.r2Publication?.Metadata?.Rendition?.Layout === "fixed" || this.props.publicationView?.isFixedLayoutPublication;
         }
         return isFixedLayout;
     }
+
     private isRTL(isFixedLayout: boolean): boolean {
         const isRTL_PackageMeta = this.props.r2Publication?.Metadata?.Direction === "rtl" || this.props.r2Publication?.Metadata?.Direction === "ttb";
         return isFixedLayout ? isRTL_PackageMeta : (isRTL_PackageMeta || this.state.currentLocation?.docInfo?.isRightToLeft);
@@ -644,32 +773,47 @@ class Reader extends React.Component<IProps, IState> {
         return this.isRTL(this.isFixedLayout());
     }
 
+    private setZenModeAndFXLZoom(zen: boolean, fxlZoom: number) {
+        // this.setState({ zenMode: !this.state.zenMode });
+        // console.log("ZEN", this.state.zenMode, zen, this.state.fxlZoomPercent, fxlZoom);
+        // if (this.state.fxlZoomPercent === fxlZoom && this.state.zenMode !== zen) {
+        //     // HACK ALERT: simulate window resize to trigger navigator 100ms timeout debouncer
+        //     // window.dispatchEvent(document.createEvent("resize")); // CRASH
+        //     window.dispatchEvent(new Event("resize")); // WORKS
+        // } else if (this.state.fxlZoomPercent !== fxlZoom && this.state.zenMode === zen) { // this.state.zenMode !== zen is captured by publication_viewport.ResizeObserver
+        //     this.fixedLayoutZoomPercentDebounced(fxlZoom);
+        // }
+        if (this.state.fxlZoomPercent !== fxlZoom) {
+            this.fixedLayoutZoomPercentDebounced(fxlZoom);
+        }
+        this.setState({ zenMode: zen, fxlZoomPercent: fxlZoom });
+    }
+
     public render(): React.ReactElement<{}> {
 
         const readerMenuProps: IReaderMenuProps = {
-            open: this.state.menuOpen,
-            doFocus: this.state.doFocus,
+            // open: this.props.menuOpen,
+            // doFocus: this.state.doFocus,
             handleLinkClick: this.handleLinkClick,
             goToLocator: this.goToLocator,
-            toggleMenu: this.handleMenuButtonClick,
+            // toggleMenu: this.handleMenuButtonClick,
             focusMainAreaLandmarkAndCloseMenu: this.focusMainAreaLandmarkAndCloseMenu.bind(this),
             pdfToc: this.state.pdfPlayerToc,
             isPdf: this.props.isPdf,
-            openedSection: this.state.openedSectionMenu,
-            annotationUUID: this.state.annotationUUID,
-            resetAnnotationUUID: () => { this.setState({ annotationUUID: "" }); },
+            // openedSection: this.state.openedSectionMenu,
+            // annotationUUID: this.state.annotationUUID,
+            // resetAnnotationUUID: () => { this.setState({ annotationUUID: "" }); },
             pdfNumberOfPages: this.state.pdfPlayerNumberOfPages,
-            setOpenedSection: (v: string) => this.setState({ openedSectionMenu: v }),
+            // setOpenedSection: (v: string) => this.setState({ openedSectionMenu: v }),
         };
 
         const ReaderSettingsProps: IReaderSettingsProps = {
-            open: this.state.settingsOpen,
-            doFocus: this.state.doFocus,
-            indexes: this.props.indexes,
+            // open: this.state.settingsOpen,
+            // doFocus: this.state.doFocus,
             // readerConfig: this.props.readerConfig,
             // handleSettingChange: this.handleSettingChange.bind(this),
             // handleIndexChange: this.handleIndexChange.bind(this),
-            toggleMenu: this.handleSettingsClick,
+            // toggleMenu: this.handleSettingsClick,
             // r2Publication: this.props.r2Publication,
             handleDivinaReadingMode: this.handleDivinaReadingMode.bind(this),
 
@@ -681,41 +825,36 @@ class Reader extends React.Component<IProps, IState> {
 
             isDivina: this.props.isDivina,
             isPdf: this.props.isPdf,
-            isFXL: this.props.publicationView.isFixedLayoutPublication,
+            isFXL: this.props.publicationView.isFixedLayoutPublication, // see this.isFixedLayout() for publication-wide AND spine-item document check
             // openedSection: this.state.openedSectionSettings,
+            fxlZoomPercent: this.state.fxlZoomPercent,
             zenMode: this.state.zenMode,
-            setZenMode : () => this.setState({ zenMode : !this.state.zenMode}),
-            searchEnable: this.props.searchEnable,
+            setZenModeAndFXLZoom: (zen: boolean, fxlZoom: number) => {
+                this.setZenModeAndFXLZoom(zen, fxlZoom);
+            },
+            // searchEnable: this.props.searchEnable,
         };
 
-        // {this.state.bookmarkMessage ? <div
-        //     aria-live="assertive"
-        //     aria-relevant="all"
-        //     role="alert"
-
-        //     style={{position: "absolute", left: "-1000px"}}
-        // >
-        //     {this.state.bookmarkMessage}
-        // </div> : <></>}
-
-        
         const isAudioBook = isAudiobookFn(this.props.r2Publication);
         const arrowDisabledNotEpub = isAudioBook || this.props.isPdf || this.props.isDivina;
         // const isFXL = this.isFixedLayout();
-        // const isPaginated = this.props.readerConfig.paged;
+        const isPaginated = this.props.readerConfig.paged;
 
         // console.log(arrowDisabledNotEpub, isFXL, isPaginated);
         // epub non fxl (page)      : false false true  : true
         // epub non fxl (scroll)    : false false false : false
-        // epub fxl                 : false true true :   true 
+        // epub fxl                 : false true true :   true
         // epub fxl (scroll)        : false true false :  true
         // pdf                      : true false true :   false
         // audiobook                : true false true :   false
         // divina                   : true false true :   false
 
         const arrowEnabled = !arrowDisabledNotEpub /* && (isFXL || isPaginated) */;
-        
+
+        const isRTL = this.isRTLFlip();
+
         return (
+            <>
             <div className={classNames(
                 this.props.readerConfig.theme === "night" ? stylesReader.nightMode :
                 this.props.readerConfig.theme === "sepia" ? stylesReader.sepiaMode :
@@ -726,6 +865,9 @@ class Reader extends React.Component<IProps, IState> {
                 this.props.readerConfig.theme === "paper" ? stylesReader.paperMode :
                 "",
             )}>
+                {/* Reader Lock DEMO !!! */}
+                {/* <h1 style={{zIndex: 999999, backgroundColor: "red", position: "absolute"}}>{this.props.lock ? "lock" : "no-lock"}</h1> */}
+                {/* Reader Lock DEMO !!! */}
                 <a
                     role="heading"
                     className={stylesReader.anchor_link}
@@ -735,6 +877,13 @@ class Reader extends React.Component<IProps, IState> {
                     aria-label={this.props.__("accessibility.toolbar")}
                     tabIndex={-1}>{this.props.__("accessibility.toolbar")}</a>
                 <SkipLink
+                    onClick={() => {
+                        // const element = document.getElementById("main-content");
+                        // if (element) {
+                        //     element.focus();
+                        // }
+                        this.focusMainArea(true, true); // keyboard FocusMainDeep
+                    }}
                     className={stylesReader.skip_link}
                     anchorId="main-content"
                     label={this.props.__("accessibility.skipLink")}
@@ -743,9 +892,10 @@ class Reader extends React.Component<IProps, IState> {
                     {!this.state.zenMode ?
                 <ReaderHeader
                         shortcutEnable={this.state.shortcutEnable}
+                        setShortcutEnable={(value: boolean) => this.setState({ "shortcutEnable": value })}
                         infoOpen={this.props.infoOpen}
-                        menuOpen={this.state.menuOpen}
-                        settingsOpen={this.state.settingsOpen}
+                        // menuOpen={this.props.menuOpen}
+                        // settingsOpen={this.state.settingsOpen}
 
                         handleTTSPlay={this.handleTTSPlay}
                         handleTTSResume={this.handleTTSResume}
@@ -764,37 +914,50 @@ class Reader extends React.Component<IProps, IState> {
                         handleMediaOverlaysPause={this.handleMediaOverlaysPause}
                         handleMediaOverlaysPlaybackRate={this.handleMediaOverlaysPlaybackRate}
 
-                        handleMenuClick={this.handleMenuButtonClick}
-                        handleSettingsClick={this.handleSettingsClick}
+                        // handleMenuClick={this.handleMenuButtonClick}
+                        // handleSettingsClick={this.handleSettingsClick}
                         fullscreen={this.state.fullscreen}
                         mode={this.props.readerMode}
-                        handleFullscreenClick={this.handleFullscreenClick}
+                        // handleFullscreenClick={this.handleFullscreenClick}
                         handleReaderDetach={this.handleReaderDetach}
                         handleReaderClose={this.handleReaderClose}
-                        toggleBookmark={() => this.handleToggleBookmark(false)}
-                        // isOnBookmark={this.state.visibleBookmarkList.length > 0}
-                        numberOfVisibleBookmarks={this.state.visibleBookmarkList.length}
                         isOnSearch={this.props.searchEnable}
                         ReaderSettingsProps={ReaderSettingsProps}
                         readerMenuProps={readerMenuProps}
                         handlePublicationInfo={this.handlePublicationInfo}
-                        // tslint:disable-next-line: max-line-length
                         currentLocation={this.props.isDivina || this.props.isPdf ? this.props.locator : this.state.currentLocation}
                         isDivina={this.props.isDivina}
                         isPdf={this.props.isPdf}
+                        isAudiobook={this.props.isAudioBook}
                         divinaSoundPlay={this.handleDivinaSound}
 
                         showSearchResults={this.showSearchResults}
                         disableRTLFlip={this.props.disableRTLFlip}
                         isRTLFlip={this.isRTLFlip}
+
+                        pdfPlayerNumberOfPages={this.state.pdfPlayerNumberOfPages}
+                        pdfThumbnailImageCacheArray={this.state.pdfThumbnailImageCacheArray}
+                        pdfPrintOpen={this.state.printDialogOpen}
+                        setPdfPrintOpen={(value: boolean) => this.setState({ printDialogOpen: value })}
+                        publicationView={this.props.publicationView}
                     />
-                    : 
-                    <button onClick={() => this.setState({ zenMode : false})} className={stylesReader.button_exitZen}>
-                        <SVG ariaHidden svg={exitZenModeIcon} />
-                    </button>
+                    :
+                    <div className={stylesReader.exitZen_container}>
+                            <button onClick={() => {
+                                // this.setState({ zenMode: false });
+                                ReaderSettingsProps.setZenModeAndFXLZoom(false, this.state.fxlZoomPercent);
+                            }}
+                            className={stylesReader.button_exitZen}
+                            style={{ opacity: isPaginated ? "1" : "0" }}
+                            aria-label={this.props.__("reader.navigation.ZenModeExit")}
+                            title={this.props.__("reader.navigation.ZenModeExit")}
+                        >
+                            <SVG ariaHidden svg={exitZenModeIcon} />
+                        </button>
+                    </div>
                     }
 
-                    <div 
+                    <div
                     style={{marginBottom: this.state.zenMode ? "0" : "44px"}}
                     className={classNames(stylesReader.content_root,
                         this.state.fullscreen ? stylesReader.content_root_fullscreen : undefined,
@@ -817,7 +980,7 @@ class Reader extends React.Component<IProps, IState> {
                                 <div
                                     id="publication_viewport"
                                     // className={stylesReader.publication_viewport}
-                                    className={classNames(stylesReader.publication_viewport, (!this.state.zenMode && (this.state.settingsOpen || this.state.menuOpen)) ?
+                                    className={classNames(stylesReader.publication_viewport, (!this.state.zenMode && (this.props.settingsOpen || this.props.menuOpen)) ?
                                         (!this.props.isPdf ?
                                            this.props.readerConfig.readerDockingMode === "left" ? stylesReader.docked_left
                                             : this.props.readerConfig.readerDockingMode === "right" ? !this.props.readerConfig.paged ? stylesReader.docked_right_scrollable : stylesReader.docked_right
@@ -826,19 +989,24 @@ class Reader extends React.Component<IProps, IState> {
                                             this.props.readerConfig.readerDockingMode === "left" ? stylesReader.docked_left_pdf
                                             : this.props.readerConfig.readerDockingMode === "right" ? !this.props.readerConfig.paged ? stylesReader.docked_right_scrollable : stylesReader.docked_right_pdf
                                             : ""
-                                        ) : undefined, 
-                                        (this.props.searchEnable && !this.props.isPdf) ? stylesReader.isOnSearch 
-                                        : (this.props.searchEnable && this.props.isPdf) ? stylesReader.isOnSearchPdf 
+                                        ) : undefined,
+                                        (this.props.searchEnable && !this.props.isPdf && this.props.readerConfig.paged && !this.isFixedLayout()) ? stylesReader.isOnSearch
+                                        : (this.props.searchEnable && this.props.isPdf) ? stylesReader.isOnSearchPdf :
+                                        (this.props.searchEnable && !this.props.readerConfig.paged && !this.isFixedLayout()) ? stylesReader.isOnSearchScroll
                                         : "")}
                                     ref={this.mainElRef}
-                                    style={{ inset: isAudioBook || !this.props.readerConfig.paged || this.props.isPdf || this.props.isDivina ? "0" : "75px 50px" }}>
+                                    style={{
+                                        inset: this.state.currentLocation?.docInfo?.isVerticalWritingMode || isAudioBook || !this.props.readerConfig.paged || this.props.isPdf || this.props.isDivina || this.isFixedLayout() ? "0" : "75px 50px",
+                                        // opacity: this.state.blackoutMask ? 0 : 1,
+                                    }}>
                                 </div>
 
                                 {arrowEnabled && !this.state.zenMode ?
-                                    <div className={stylesReaderFooter.arrows}>
+                                    <nav role="navigation" aria-label={this.props.__("reader.navigation.openTableOfContentsTitle")}
+                                        className={classNames(stylesReaderFooter.arrows, isPaginated ? stylesReaderFooter.isPaginated : undefined)}
+                                    >
                                         <button onClick={(ev) => {
                                             if (ev.shiftKey) {
-                                                const isRTL = false; // TODO RTL (see ReaderMenu.tsx)
                                                 if (isRTL) {
                                                     this.onKeyboardNavigationToEnd.bind(this);
                                                 } else {
@@ -848,13 +1016,29 @@ class Reader extends React.Component<IProps, IState> {
                                                 this.navLeftOrRight_(true);
                                             }
                                         }}
-                                            title={this.props.__("reader.svg.left")}
-                                            className={(this.state.settingsOpen || this.state.menuOpen) ? (this.props.readerConfig.readerDockingMode === "left" ? stylesReaderFooter.navigation_arrow_docked_left :  stylesReaderFooter.navigation_arrow_left) : stylesReaderFooter.navigation_arrow_left}
+                                            title={!isRTL ? this.props.__("reader.navigation.screenPrevious") : this.props.__("reader.navigation.screenNext")}
+                                            className={(this.props.settingsOpen || this.props.menuOpen) ? (this.props.readerConfig.readerDockingMode === "left" ? stylesReaderFooter.navigation_arrow_docked_left :  stylesReaderFooter.navigation_arrow_left) : stylesReaderFooter.navigation_arrow_left}
                                         >
-                                            <SVG ariaHidden={true} svg={ArrowLeftIcon} />
+                                            <SVG ariaHidden={true} svg={ArrowLeftIcon} aria-label={this.props.__("reader.svg.left")}/>
                                         </button>
-                                    </div>
-                                    : 
+                                        <button onClick={(ev) => {
+                                            if (ev.shiftKey) {
+                                                if (isRTL) {
+                                                    this.onKeyboardNavigationToBegin.bind(this);
+                                                } else {
+                                                    this.onKeyboardNavigationToEnd.bind(this);
+                                                }
+                                            } else {
+                                                this.navLeftOrRight_(false);
+                                            }
+                                        }}
+                                            title={isRTL ? this.props.__("reader.navigation.screenPrevious") : this.props.__("reader.navigation.screenNext")}
+                                            className={(this.props.settingsOpen || this.props.menuOpen) ? (this.props.readerConfig.readerDockingMode === "right" ? stylesReaderFooter.navigation_arrow_docked_right :  stylesReaderFooter.navigation_arrow_right) : stylesReaderFooter.navigation_arrow_right}
+                                        >
+                                            <SVG ariaHidden={true} svg={ArrowRightIcon} aria-label={this.props.__("reader.svg.right")}/>
+                                        </button>
+                                    </nav>
+                                    :
                                     <></>}
 
                                 {
@@ -897,33 +1081,11 @@ class Reader extends React.Component<IProps, IState> {
                                         </div>
                                         : <></>
                                 }
-                                {arrowEnabled && !this.state.zenMode  ?
-                                    <div className={stylesReaderFooter.arrows}>
-                                        <button onClick={(ev) => {
-                                            if (ev.shiftKey) {
-                                                const isRTL = false; // TODO RTL (see ReaderMenu.tsx)
-                                                if (isRTL) {
-                                                    this.onKeyboardNavigationToBegin.bind(this);
-                                                } else {
-                                                    this.onKeyboardNavigationToEnd.bind(this);
-                                                }
-                                            } else {
-                                                this.navLeftOrRight_(false);
-                                            }
-                                        }}
-                                            title={this.props.__("reader.svg.right")}
-                                            className={(this.state.settingsOpen || this.state.menuOpen) ? (this.props.readerConfig.readerDockingMode === "right" ? stylesReaderFooter.navigation_arrow_docked_right :  stylesReaderFooter.navigation_arrow_right) : stylesReaderFooter.navigation_arrow_right}
-                                        >
-                                            <SVG ariaHidden={true} svg={ArrowRightIcon} />
-                                        </button>
-                                    </div>
-                                    :
-                                    <></>}
                             </main>
                         </div>
                     </div>
                 </div>
-                { !this.state.zenMode ? 
+                { !this.state.zenMode ?
                 <ReaderFooter
                     historyCanGoBack={this.state.historyCanGoBack}
                     historyCanGoForward={this.state.historyCanGoForward}
@@ -931,11 +1093,11 @@ class Reader extends React.Component<IProps, IState> {
                     gotoBegin={this.onKeyboardNavigationToBegin.bind(this)}
                     gotoEnd={this.onKeyboardNavigationToEnd.bind(this)}
                     fullscreen={this.state.fullscreen}
-                    // tslint:disable-next-line: max-line-length
                     currentLocation={this.props.isDivina || this.props.isPdf ? this.props.locator : this.state.currentLocation}
                     handleLinkClick={this.handleLinkClick}
                     goToLocator={this.goToLocator}
                     isDivina={this.props.isDivina}
+                    isDivinaLocation={isDivinaLocation}
                     divinaNumberOfPages={this.state.divinaNumberOfPages}
                     divinaContinousEqualTrue={this.state.divinaContinousEqualTrue}
                     isPdf={this.props.isPdf}
@@ -944,10 +1106,11 @@ class Reader extends React.Component<IProps, IState> {
                     isRTLFlip={this.isRTLFlip}
                     publicationView={this.props.publicationView}
 
-                />
-                : <></>
-    }
-            </div>
+                        />
+                        : <></>
+                    }
+                </div>
+            </>
         );
     }
 
@@ -956,6 +1119,19 @@ class Reader extends React.Component<IProps, IState> {
     }
 
     private registerAllKeyboardListeners() {
+
+        registerKeyboardListener(
+            true, // listen for key down (not key up)
+            this.props.keyboardShortcuts.FXLZoomReset,
+            this.onKeyboardFixedLayoutZoomReset);
+        registerKeyboardListener(
+            false, // listen for key down (not key up)
+            this.props.keyboardShortcuts.FXLZoomIn,
+            this.onKeyboardFixedLayoutZoomIn);
+        registerKeyboardListener(
+            false, // listen for key down (not key up)
+            this.props.keyboardShortcuts.FXLZoomOut,
+            this.onKeyboardFixedLayoutZoomOut);
 
         registerKeyboardListener(
             false, // listen for key down (not key up)
@@ -1015,6 +1191,10 @@ class Reader extends React.Component<IProps, IState> {
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.FocusMain,
             this.onKeyboardFocusMain);
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            this.props.keyboardShortcuts.FocusMainDeep,
+            this.onKeyboardFocusMainDeep);
 
         registerKeyboardListener(
             true, // listen for key up (not key down)
@@ -1025,11 +1205,6 @@ class Reader extends React.Component<IProps, IState> {
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.ToggleReaderFullscreen,
             this.onKeyboardFullScreen);
-
-        registerKeyboardListener(
-            true, // listen for key up (not key down)
-            this.props.keyboardShortcuts.ToggleBookmark,
-            this.onKeyboardBookmark);
 
         registerKeyboardListener(
             true, // listen for key up (not key down)
@@ -1063,6 +1238,21 @@ class Reader extends React.Component<IProps, IState> {
 
         registerKeyboardListener(
             true, // listen for key up (not key down)
+            this.props.keyboardShortcuts.FocusReaderNavigationBookmarks,
+            this.onKeyboardShowNavigationBookmarks);
+
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            this.props.keyboardShortcuts.FocusReaderNavigationAnnotations,
+            this.onKeyboardShowNavigationAnnotations);
+
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            this.props.keyboardShortcuts.FocusReaderNavigationSearch,
+            this.onKeyboardShowNavigationSearch);
+
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
             this.props.keyboardShortcuts.FocusReaderNavigationTOC,
             this.onKeyboardShowTOC);
 
@@ -1078,11 +1268,11 @@ class Reader extends React.Component<IProps, IState> {
         registerKeyboardListener(
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.AudioPrevious,
-            this.onKeyboardAudioPrevious);
+            this.onKeyboardAudioPrevious_);
         registerKeyboardListener(
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.AudioNext,
-            this.onKeyboardAudioNext);
+            this.onKeyboardAudioNext_);
         registerKeyboardListener(
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.AudioPreviousAlt,
@@ -1104,13 +1294,26 @@ class Reader extends React.Component<IProps, IState> {
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.AnnotationsCreate,
             this.onKeyboardAnnotation);
+        // registerKeyboardListener(
+        //     true, // listen for key up (not key down)
+        //     this.props.keyboardShortcuts.AnnotationsCreateAlt,
+        //     this.onKeyboardAnnotation);
         registerKeyboardListener(
             true, // listen for key up (not key down)
             this.props.keyboardShortcuts.AnnotationsCreateQuick,
             this.onKeyboardQuickAnnotation);
+        registerKeyboardListener(
+            true, // listen for key up (not key down)
+            this.props.keyboardShortcuts.Print,
+            this.onKeyboardPrint);
     }
 
     private unregisterAllKeyboardListeners() {
+
+        unregisterKeyboardListener(this.onKeyboardFixedLayoutZoomReset);
+        unregisterKeyboardListener(this.onKeyboardFixedLayoutZoomIn);
+        unregisterKeyboardListener(this.onKeyboardFixedLayoutZoomOut);
+
         unregisterKeyboardListener(this.onKeyboardHistoryNavigationPrevious);
         unregisterKeyboardListener(this.onKeyboardHistoryNavigationNext);
         unregisterKeyboardListener(this.onKeyboardPageNavigationPrevious);
@@ -1118,26 +1321,92 @@ class Reader extends React.Component<IProps, IState> {
         unregisterKeyboardListener(this.onKeyboardSpineNavigationPrevious);
         unregisterKeyboardListener(this.onKeyboardSpineNavigationNext);
         unregisterKeyboardListener(this.onKeyboardFocusMain);
+        unregisterKeyboardListener(this.onKeyboardFocusMainDeep);
         unregisterKeyboardListener(this.onKeyboardFocusToolbar);
         unregisterKeyboardListener(this.onKeyboardFullScreen);
-        unregisterKeyboardListener(this.onKeyboardBookmark);
         unregisterKeyboardListener(this.onKeyboardInfo);
         unregisterKeyboardListener(this.onKeyboardInfoWhereAmI);
         unregisterKeyboardListener(this.onKeyboardInfoWhereAmISpeak);
         unregisterKeyboardListener(this.onKeyboardFocusSettings);
         unregisterKeyboardListener(this.onKeyboardFocusNav);
         unregisterKeyboardListener(this.onKeyboardShowGotoPage);
+        unregisterKeyboardListener(this.onKeyboardShowNavigationAnnotations);
+        unregisterKeyboardListener(this.onKeyboardShowNavigationSearch);
+        unregisterKeyboardListener(this.onKeyboardShowNavigationBookmarks);
         unregisterKeyboardListener(this.onKeyboardShowTOC);
         unregisterKeyboardListener(this.onKeyboardCloseReader);
         unregisterKeyboardListener(this.onKeyboardAudioPlayPause);
-        unregisterKeyboardListener(this.onKeyboardAudioPrevious);
-        unregisterKeyboardListener(this.onKeyboardAudioNext);
+        unregisterKeyboardListener(this.onKeyboardAudioPrevious_);
+        unregisterKeyboardListener(this.onKeyboardAudioNext_);
         unregisterKeyboardListener(this.onKeyboardAudioPreviousAlt);
         unregisterKeyboardListener(this.onKeyboardAudioNextAlt);
         unregisterKeyboardListener(this.onKeyboardAudioStop);
         unregisterKeyboardListener(this.onKeyboardAnnotationMargin);
         unregisterKeyboardListener(this.onKeyboardAnnotation);
         unregisterKeyboardListener(this.onKeyboardQuickAnnotation);
+        unregisterKeyboardListener(this.onKeyboardPrint);
+    }
+
+    private onKeyboardFixedLayoutZoomReset() {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardFixedLayoutZoomReset)");
+            }
+            return;
+        }
+        // this.setState({ fxlZoomPercent: 0 });
+        this.setZenModeAndFXLZoom(this.state.zenMode, 0);
+        // fixedLayoutZoomPercent(0);
+    }
+    private onKeyboardFixedLayoutZoomIn() {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardFixedLayoutZoomIn)");
+            }
+            return;
+        }
+        const step = 10;
+        let z = this.state.fxlZoomPercent === 0 ? 100 : (this.state.fxlZoomPercent + step);
+        if (z >= 400) {
+            z = 400;
+        }
+
+        // this.setState({ fxlZoomPercent: z });
+        this.setZenModeAndFXLZoom(this.state.zenMode, z);
+
+        // if (this.timerFXLZoomDebounce) {
+        //     clearTimeout(this.timerFXLZoomDebounce);
+        // }
+        // this.timerFXLZoomDebounce = window.setTimeout(() => {
+        //     this.timerFXLZoomDebounce = undefined;
+        //     this.setZenModeAndFXLZoom(this.state.zenMode, z);
+        //     // fixedLayoutZoomPercent(z);
+        // }, 600);
+    }
+    private onKeyboardFixedLayoutZoomOut() {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardFixedLayoutZoomOut)");
+            }
+            return;
+        }
+        const step = -10;
+        let z = this.state.fxlZoomPercent === 0 ? 100 : (this.state.fxlZoomPercent + step);
+        if (z <= -step) {
+            z = -step;
+        }
+
+        // this.setState({ fxlZoomPercent: z });
+        this.setZenModeAndFXLZoom(this.state.zenMode, z);
+
+        // if (this.timerFXLZoomDebounce) {
+        //     clearTimeout(this.timerFXLZoomDebounce);
+        // }
+        // this.timerFXLZoomDebounce = window.setTimeout(() => {
+        //     this.timerFXLZoomDebounce = undefined;
+        //     this.setZenModeAndFXLZoom(this.state.zenMode, z);
+        //     // fixedLayoutZoomPercent(z);
+        // }, 600);
     }
 
     private handleLinkLocator = (locator: R2Locator, isFromOnPopState = false) => {
@@ -1158,12 +1427,32 @@ class Reader extends React.Component<IProps, IState> {
             // windowHistory._readerInstance === this
             this.setState({ historyCanGoForward: false, historyCanGoBack: windowHistory._length > 1 });
         }
+
+        // if (this.isFixedLayout()) {
+        //     this.setState({ blackoutMask: true });
+        // }
         r2HandleLinkLocator(locator);
     };
 
     private handleLinkUrl = (url: string, isFromOnPopState = false) => {
         handleLinkUrl_UpdateHistoryState(url, isFromOnPopState);
+
+        // if (this.isFixedLayout()) {
+        //     this.setState({ blackoutMask: true });
+        // }
         r2HandleLinkUrl(url);
+    };
+
+    private accessibilitySupportChanged = (_e: Electron.IpcRendererEvent, accessibilitySupportEnabled: boolean) => {
+        console.log("ipcRenderer.on - accessibility-support-changed: ", accessibilitySupportEnabled);
+
+        // prevents infinite loop via componentDidUpdate()
+        if (accessibilitySupportEnabled !== this.state.accessibilitySupportEnabled) {
+            this.setState({ accessibilitySupportEnabled });
+        }
+        if (accessibilitySupportEnabled && this.props.readerConfig.paged) {
+            this.props.setConfig({ paged: false });
+        }
     };
 
     private onKeyboardAnnotationMargin = () => {
@@ -1174,11 +1463,10 @@ class Reader extends React.Component<IProps, IState> {
             return;
         }
 
-        const newReaderConfig = {...this.props.readerConfig};
-        newReaderConfig.annotation_defaultDrawView = newReaderConfig.annotation_defaultDrawView === "annotation" ? "margin" : "annotation";
+        const annotation_defaultDrawView = this.props.readerConfig.annotation_defaultDrawView === "annotation" ? "margin" : "annotation";
 
-        console.log(`onKeyboardAnnotationMargin : highlight=${newReaderConfig.annotation_defaultDrawView}`);
-        this.props.setConfig(newReaderConfig, this.props.session);
+        console.log(`onKeyboardAnnotationMargin : highlight=${annotation_defaultDrawView}`);
+        this.props.setConfig({ annotation_defaultDrawView });
     };
 
     private onKeyboardAnnotation = () => {
@@ -1189,7 +1477,7 @@ class Reader extends React.Component<IProps, IState> {
             return;
         }
 
-        this.props.triggerAnnotationBtn();
+        this.props.triggerAnnotationBtn(true);
     };
 
     private onKeyboardQuickAnnotation = () => {
@@ -1201,22 +1489,22 @@ class Reader extends React.Component<IProps, IState> {
         }
 
         if (this.props.readerConfig.annotation_popoverNotOpenOnNoteTaking) {
-            this.props.triggerAnnotationBtn();
+            this.props.triggerAnnotationBtn(true);
             return ;
         }
 
-        let newReaderConfig = {...this.props.readerConfig};
+        let newReaderConfig: Partial<ReaderConfig> = {};
         const { annotation_popoverNotOpenOnNoteTaking } = newReaderConfig;
         newReaderConfig.annotation_popoverNotOpenOnNoteTaking = true;
 
         console.log(`onKeyboardQuickAnnotation : popoverNotOpenOnNoteTaking=${annotation_popoverNotOpenOnNoteTaking}`);
-        this.props.setConfig(newReaderConfig, this.props.session);
+        this.props.setConfig(newReaderConfig);
 
-        this.props.triggerAnnotationBtn();
+        this.props.triggerAnnotationBtn(true);
 
-        newReaderConfig = {...this.props.readerConfig};
+        newReaderConfig = {};
         newReaderConfig.annotation_popoverNotOpenOnNoteTaking = annotation_popoverNotOpenOnNoteTaking;
-        this.props.setConfig(newReaderConfig, this.props.session);
+        this.props.setConfig(newReaderConfig);
     };
 
     private onKeyboardAudioStop = () => {
@@ -1278,9 +1566,12 @@ class Reader extends React.Component<IProps, IState> {
     };
 
     private onKeyboardAudioPreviousAlt = () => {
-        this.onKeyboardAudioPrevious(true);
+        this.onKeyboardAudioPrevious(false, true);
     };
-    private onKeyboardAudioPrevious = (skipSentences = false) => {
+    private onKeyboardAudioPrevious_ = () => {
+        this.onKeyboardAudioPrevious(false, false);
+    };
+    private onKeyboardAudioPrevious = (skipSentences: boolean, escape: boolean) => {
         if (!this.state.shortcutEnable) {
             if (DEBUG_KEYBOARD) {
                 console.log("!shortcutEnable (onKeyboardAudioPrevious)");
@@ -1299,14 +1590,17 @@ class Reader extends React.Component<IProps, IState> {
         } else {
             // const doc = document as TKeyboardDocument;
             // const skipSentences = doc._keyModifierShift && doc._keyModifierAlt;
-            this.handleTTSPrevious(skipSentences);
+            this.handleTTSPrevious(skipSentences, escape);
         }
     };
 
     private onKeyboardAudioNextAlt = () => {
-        this.onKeyboardAudioNext(true);
+        this.onKeyboardAudioNext(false, true);
     };
-    private onKeyboardAudioNext = (skipSentences = false) => {
+    private onKeyboardAudioNext_ = () => {
+        this.onKeyboardAudioNext(false, false);
+    };
+    private onKeyboardAudioNext = (skipSentences: boolean, escape: boolean) => {
         if (!this.state.shortcutEnable) {
             if (DEBUG_KEYBOARD) {
                 console.log("!shortcutEnable (onKeyboardAudioNext)");
@@ -1325,12 +1619,22 @@ class Reader extends React.Component<IProps, IState> {
         } else {
             // const doc = document as TKeyboardDocument;
             // const skipSentences = doc._keyModifierShift && doc._keyModifierAlt;
-            this.handleTTSNext(skipSentences);
+            this.handleTTSNext(skipSentences, escape);
         }
     };
 
     private onKeyboardFullScreen = () => {
+
         this.handleFullscreenClick();
+
+        // this.setState({ blackoutMask: true });
+        // this.blackoutDebounced();
+
+        // this.fixedLayoutZoomPercentDebounced(this.state.fxlZoomPercent);
+
+        // HACK ALERT: simulate window resize to trigger navigator 100ms timeout debouncer
+        // window.dispatchEvent(document.createEvent("resize")); // CRASH
+        // window.dispatchEvent(new Event("resize")); // WORKS
     };
 
     private onKeyboardCloseReader = () => {
@@ -1379,8 +1683,10 @@ class Reader extends React.Component<IProps, IState> {
             const isDivina = this.props.r2Publication && isDivinaFn(this.props.r2Publication);
             const isPdf = this.props.r2Publication && isPdfFn(this.props.r2Publication);
 
-        const isFixedLayoutPublication = this.props.r2Publication &&
-            this.props.r2Publication.Metadata?.Rendition?.Layout === "fixed";
+            // this.isFixedLayout() ==> accounts for document spine item, not necessarily equivalent to publication metadata
+            // this.props.publicationView.isFixedLayoutPublication ??
+            const isFixedLayoutPublication = this.props.r2Publication &&
+                this.props.r2Publication.Metadata?.Rendition?.Layout === "fixed";
 
             let txtProgression: string | undefined;
             let txtPagination: string | undefined;
@@ -1543,7 +1849,15 @@ class Reader extends React.Component<IProps, IState> {
             }
             return;
         }
-        this.handleMenuButtonClick(true, this.state.openedSectionMenu, true);
+
+        // lock focus outside webview for 400ms
+        // if (this.props.readerConfig.readerDockingMode !== "full") {
+        //     stealFocusDisable(true);
+        //     setTimeout(() => stealFocusDisable(false), 400);
+        // }
+
+        // this.handleMenuButtonClick(true, this.state.openedSectionMenu, true);
+        this.props.toggleMenu({open: true, id: this.props.readerConfig.readerDockingMode === "full" ? `reader-menu-${this.props.readerConfig.readerMenuSection}-trigger` : "reader-menu-docked-trigger", focus: true });
     };
     private onKeyboardFocusSettings = () => {
         if (!this.state.shortcutEnable) {
@@ -1552,17 +1866,8 @@ class Reader extends React.Component<IProps, IState> {
             }
             return;
         }
-        this.handleSettingsClick(true, true);
-    };
-
-    private onKeyboardBookmark = async () => {
-        if (!this.state.shortcutEnable) {
-            if (DEBUG_KEYBOARD) {
-                console.log("!shortcutEnable (onKeyboardBookmark)");
-            }
-            return;
-        }
-        await this.handleToggleBookmark(true);
+        // this.handleSettingsClick(true, true);
+        this.props.toggleSettings({open: true, id: "reader-settings-nav", focus: true});
     };
 
     private onKeyboardFocusMain = () => {
@@ -1573,7 +1878,21 @@ class Reader extends React.Component<IProps, IState> {
             return;
         }
 
-        this.focusMainArea();
+        this.focusMainArea(false, true);
+        // if (this.fastLinkRef?.current) {
+        //     console.log("€€€€€ FOCUS READER MAIN");
+        //     this.fastLinkRef.current.focus();
+        // }
+    };
+    private onKeyboardFocusMainDeep = () => {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardFocusMainDeep)");
+            }
+            return;
+        }
+
+        this.focusMainArea(true, true);
         // if (this.fastLinkRef?.current) {
         //     console.log("€€€€€ FOCUS READER MAIN");
         //     this.fastLinkRef.current.focus();
@@ -1605,9 +1924,19 @@ class Reader extends React.Component<IProps, IState> {
     };
 
     private onKeyboardPageNavigationNext = () => {
+        // screen reader users do not "turn pages", in fact this can inadvertantly change the current reading location!
+        // NavigatePrevious/NextChapter can be used to switch document(chapter) back and forth
+        if (this.state.accessibilitySupportEnabled) {
+            return;
+        }
         this.onKeyboardPageNavigationPreviousNext(false);
     };
     private onKeyboardPageNavigationPrevious = () => {
+        // screen reader users do not "turn pages", in fact this can inadvertantly change the current reading location!
+        // NavigatePrevious/NextChapter can be used to switch document(chapter) back and forth
+        if (this.state.accessibilitySupportEnabled) {
+            return;
+        }
         this.onKeyboardPageNavigationPreviousNext(true);
     };
     private onKeyboardPageNavigationPreviousNext = (isPrevious: boolean) => {
@@ -1628,7 +1957,7 @@ class Reader extends React.Component<IProps, IState> {
     private onKeyboardNavigationToBegin = () => {
 
         if (this.props.isPdf) {
-            createOrGetPdfEventBus().dispatch("page", "1");
+            createOrGetPdfEventBus().dispatch("firstpage");
         } else if (this.props.isDivina) {
             this.currentDivinaPlayer.goToPageWithIndex(0);
         } else {
@@ -1649,8 +1978,7 @@ class Reader extends React.Component<IProps, IState> {
 
         if (this.props.isPdf) {
             if (this.state.pdfPlayerNumberOfPages) {
-                createOrGetPdfEventBus().dispatch("page",
-                    this.state.pdfPlayerNumberOfPages.toString());
+                createOrGetPdfEventBus().dispatch("lastpage");
             }
         } else if (this.props.isDivina) {
             // TODO: Divina total number of pages? (last page index (number))
@@ -1697,6 +2025,18 @@ class Reader extends React.Component<IProps, IState> {
         }
     };
 
+    private onKeyboardPrint = () => {
+        if (
+            this.props.isPdf
+            && (!!this.props.publicationView.lcp?.rights && (this.props.publicationView.lcp?.rights?.print === null || typeof this.props.publicationView.lcp?.rights?.print === "undefined" || this.props.publicationView.lcp.rights.print > 0)
+                || !this.props.publicationView.lcp
+            )
+        ) {
+            this.setState({ printDialogOpen: true });
+        } else if (this.props.isPdf) {
+            this.props.toastError(this.props.__("reader.navigation.printDisabled"));
+        }
+    };
 
     // always triggered by window.history.back/forward/go()
     // not triggered by history.pushState() and history.replaceState()
@@ -1724,7 +2064,7 @@ class Reader extends React.Component<IProps, IState> {
             } else if (typeof popState.state.data === "string") {
                 // if (!/https?:\/\//.test(popState.state.data)) {
                 if (popState.state.data.startsWith(READIUM2_ELECTRON_HTTP_PROTOCOL + "://") ||
-                    popState.state.data.startsWith("thoriumhttps://")) {
+                    popState.state.data.startsWith(THORIUM_READIUM2_ELECTRON_HTTP_PROTOCOL + "://")) {
                     this.handleLinkClick(undefined, popState.state.data, !isDocked, true);
                 } else {
                     console.log(">> HISTORY POP STATE SKIP URL (2)", popState.state.data);
@@ -1753,10 +2093,9 @@ class Reader extends React.Component<IProps, IState> {
         }
     }
 
-    private divinaSetLocation = (data: any) => {
+    private divinaSetLocation = (data: { percent: number | undefined, pageIndex: number | undefined, nbOfPages: number | undefined, locator: R2Locator }) => {
 
-
-        if (isDivinaLocation(data)) {
+        // if (isDivinaLocation(data)) {
 
             // const loc = {
             //     locator: {
@@ -1769,10 +2108,10 @@ class Reader extends React.Component<IProps, IState> {
             // };
             // console.log("pageChange", pageIndex, nbOfPages);
 
-            data.locator.locations.progression = (data.locator.locations as any).totalProgression;
-            const LocatorExtended: LocatorExtended = {
+            // SEE isDivinaLocation duck typing hack with totalProgression injection!!
+            // data.locator.locations.progression = (data.locator.locations as any).totalProgression;
+            const locatorExtended: LocatorExtended = {
                 audioPlaybackInfo: undefined,
-                locator: data.locator,
                 paginationInfo: undefined,
                 selectionInfo: undefined,
                 selectionIsNew: undefined,
@@ -1781,19 +2120,21 @@ class Reader extends React.Component<IProps, IState> {
                 epubPageID: undefined,
                 headings: undefined,
                 secondWebViewHref: undefined,
+                followingElementIDs: undefined,
+
+                locator: data.locator,
             };
             // console.log(JSON.stringify(LocatorExtended, null, 4));
-            this.handleReadingLocationChange(LocatorExtended);
-        } else {
-            console.log("DIVINA: location bad formated ", data);
-        }
-
+            this.handleReadingLocationChange(locatorExtended);
+        // } else {
+        //     console.log("DIVINA: location bad formated ", data);
+        // }
     };
 
     private loadPublicationIntoViewport() {
 
         if (this.props.r2Publication?.Metadata?.Title) {
-            const title = this.props.translator.translateContentField(this.props.r2Publication.Metadata.Title);
+            const title = translateContentFieldHelper(this.props.r2Publication.Metadata.Title, this.props.locale);
 
             window.document.title = capitalizedAppName;
             if (title) {
@@ -1824,16 +2165,30 @@ class Reader extends React.Component<IProps, IState> {
                 console.log("can't found pdf link");
             }
 
-            console.log("pdf url", pdfUrl);
+
+            const page = this.props.locator.locator.href || "1";
+            const position = this.props.locator.locator.locations.position || undefined;
+            const zoom = "page-fit"; // scale
+            // const column = ""; // TODO: !?
+
+            console.log("pdf url", pdfUrl, "with page", page);
 
             pdfMount(
                 pdfUrl,
                 publicationViewport,
+                { page, scrollTop: position, zoom },
             );
 
             createOrGetPdfEventBus().subscribe("copy", (txt) => clipboardInterceptor({ txt, locator: undefined }));
             createOrGetPdfEventBus().subscribe("toc", (toc) => this.setState({ pdfPlayerToc: toc }));
-            createOrGetPdfEventBus().subscribe("numberofpages", (pages) => this.setState({ pdfPlayerNumberOfPages: pages }));
+            createOrGetPdfEventBus().subscribe("numberofpages", (pages) => this.setState({ pdfPlayerNumberOfPages: pages, pdfThumbnailImageCacheArray: Array.from({ length: pages }, () => "") }));
+            createOrGetPdfEventBus().subscribe("thumbnailRendered", (pageNumber, imgSrc) => {
+                this.setState(({ pdfThumbnailImageCacheArray }) => {
+                    const pdfThumbnailImageCacheArrayClone = [...pdfThumbnailImageCacheArray];
+                    pdfThumbnailImageCacheArrayClone[pageNumber - 1] = imgSrc || "";
+                    return { pdfThumbnailImageCacheArray: pdfThumbnailImageCacheArrayClone };
+                });
+            });
 
             createOrGetPdfEventBus().subscribe("keydown", (payload) => {
                 keyDownEventHandler(payload, payload.elementName, payload.elementAttributes);
@@ -1895,10 +2250,11 @@ class Reader extends React.Component<IProps, IState> {
             // why does R2 navigator need this internally, instead of declaring the styles in the app's DOM?
             const publicationViewport = document.getElementById("publication_viewport");
             if (publicationViewport) {
-                // tslint:disable-next-line: max-line-length
                 publicationViewport.setAttribute("style", "display: block; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: 0; padding: 0; box-sizing: border-box; background: white; overflow: hidden;");
             }
 
+            // @----ts-ignore TS2578
+            // @ts-expect-error TS2872
             const readingModeFromPersistence = "test" || this.props.divinaReadingMode;
             console.log("Reading mode from persistence : ", readingModeFromPersistence);
             const locale = this.props.locale;
@@ -2111,9 +2467,10 @@ class Reader extends React.Component<IProps, IState> {
 
                 this.setState({ divinaArrowEnabled: false });
 
-                const isInPageChangeData = (data: any): data is { percent: number, locator: R2Locator } => {
-                    return typeof data === "object" &&
-                        isDivinaLocation(data);
+                const isInPageChangeData = (data: any): data is { percent: number | undefined, pageIndex: number | undefined, nbOfPages: number | undefined, locator: R2Locator } => {
+                    return isDivinaLocation(data)
+                        // && typeof data.percent === "number"
+                    ;
                 };
 
                 if (isInPageChangeData(data)) {
@@ -2138,10 +2495,11 @@ class Reader extends React.Component<IProps, IState> {
                     return;
                 }
                 this.setState({ divinaArrowEnabled: false });
-                const isInPagesScrollData = (data: any): data is { percent: number, locator: R2Locator } => {
-                    return typeof data === "object" &&
-                        // typeof data.percent === "number" &&
-                        isDivinaLocation(data);
+
+                const isInPagesScrollData = (data: any): data is { percent: number | undefined, pageIndex: number | undefined, nbOfPages: number | undefined, locator: R2Locator } => {
+                    return isDivinaLocation(data)
+                        // && typeof data.percent === "number"
+                    ;
                 };
 
                 if (isInPagesScrollData(data)) {
@@ -2153,25 +2511,39 @@ class Reader extends React.Component<IProps, IState> {
             });
 
         } else {
-            let preloadPath = "preload.js";
-            if (_PACKAGING === "1") {
-                preloadPath = "file://" + path.normalize(path.join((global as any).__dirname, preloadPath));
+
+            // (global as any).__dirname
+            // BROKEN when index_reader.js is not served via file://
+            // ... so instead window.location.href provides dist/index_reader.html which is co-located:
+            // path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..")) etc.
+
+            const PREPATH = "preload.js";
+            let preloadPath = PREPATH;
+            if (__TH__IS_PACKAGED__) {
+                preloadPath = "file://" + path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..", PREPATH)).replace(/\\/g, "/");
             } else {
                 preloadPath = "r2-navigator-js/dist/" +
                     "es8-es2017" +
                     "/src/electron/renderer/webview/preload.js";
 
-                if (_RENDERER_READER_BASE_URL === "file://") {
+                if (_RENDERER_READER_BASE_URL === "filex://host/") {
                     // dist/prod mode (without WebPack HMR Hot Module Reload HTTP server)
-                    preloadPath = "file://" +
-                        path.normalize(path.join((global as any).__dirname, _NODE_MODULE_RELATIVE_URL, preloadPath));
+                    preloadPath = "file://" + path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..", PREPATH)).replace(/\\/g, "/");
+
+                    // preloadPath = "file://" + path.normalize(path.join(window.location.pathname.replace(/^\/\//, "/"), "..", _NODE_MODULE_RELATIVE_URL, preloadPath)).replace(/\\/g, "/");
+
+                    // const debugStr = `[[READER.TSX ${preloadPath} >>> ${window.location.href} *** ${window.location.pathname} === ${process.cwd()} ^^^ ${(global as any).__dirname} --- ${_NODE_MODULE_RELATIVE_URL} @@@ ${preloadPath}]]`;
+                    // if (document.body.firstElementChild) {
+                    //     document.body.innerText = debugStr;
+                    // } else {
+                    //     document.body.innerText += debugStr;
+                    // }
                 } else {
                     // dev/debug mode (with WebPack HMR Hot Module Reload HTTP server)
-                    preloadPath = "file://" + path.normalize(path.join(process.cwd(), "node_modules", preloadPath));
+                    preloadPath = "file://" + path.normalize(path.join(process.cwd(), "node_modules", preloadPath)).replace(/\\/g, "/");
                 }
             }
 
-            preloadPath = preloadPath.replace(/\\/g, "/");
             const locator = this.props.locator?.locator?.href ? this.props.locator.locator : undefined;
             installNavigatorDOM(
                 this.props.r2Publication,
@@ -2184,6 +2556,7 @@ class Reader extends React.Component<IProps, IState> {
                 this.props.winId,
                 computeReadiumCssJsonMessage(this.props.readerConfig),
             );
+            // stealFocusDisable(true);
 
             windowHistory._length = 1;
             // console.log("#+$%".repeat(5)  + " installNavigatorDOM => window history replaceState() ...", JSON.stringify(locator), JSON.stringify(window.history.state), window.history.length, windowHistory._length, JSON.stringify(document.location), JSON.stringify(window.location));
@@ -2191,6 +2564,44 @@ class Reader extends React.Component<IProps, IState> {
             window.history.replaceState(locator ? { data: locator, index: windowHistory._length - 1 } : null, "");
         }
     }
+
+    private onKeyboardShowNavigationBookmarks() {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardShowNavigationBookmarks)");
+            }
+            return;
+        }
+
+        this.props.toggleMenu({ open: true, section: "tab-bookmark", id: "reader-menu-tab-bookmark", focus: true });
+    }
+
+    private onKeyboardShowNavigationAnnotations() {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardShowNavigationAnnotations)");
+            }
+            return;
+        }
+
+        this.props.toggleMenu({ open: true, section: "tab-annotation", id: "reader-menu-tab-annotation", focus: true });
+    }
+
+    private onKeyboardShowNavigationSearch() {
+        if (!this.state.shortcutEnable) {
+            if (DEBUG_KEYBOARD) {
+                console.log("!shortcutEnable (onKeyboardShowNavigationSearch)");
+            }
+            return;
+        }
+
+        if (this.props.isAudioBook || this.props.isDivina) {
+
+        } else {
+            this.props.toggleMenu({ open: true, section: "tab-search", id: "reader-menu-tab-search", focus: true });
+        }
+    }
+
 
     private onKeyboardShowGotoPage() {
         if (!this.state.shortcutEnable) {
@@ -2200,7 +2611,8 @@ class Reader extends React.Component<IProps, IState> {
             return;
         }
 
-        this.handleMenuButtonClick(true, "tab-gotopage", true);
+        // this.handleMenuButtonClick(true, "tab-gotopage", true);
+        this.props.toggleMenu({ open: true, section: "tab-gotopage", id: "reader-menu-tab-gotopage-input", focus: true });
     }
 
     private onKeyboardShowTOC() {
@@ -2211,133 +2623,116 @@ class Reader extends React.Component<IProps, IState> {
             return;
         }
 
-        // // Force webview to give the hand before Radix Dialog triggered
-        // stealFocusDisable(true);
+        // lock focus outside webview for 400ms
+        // if (this.props.readerConfig.readerDockingMode !== "full") {
+        //     stealFocusDisable(true);
+        //     setTimeout(() => stealFocusDisable(false), 400);
+        // }
 
-        this.handleMenuButtonClick(true, "tab-toc");
+        // this.handleMenuButtonClick(true, "tab-toc");
+        this.props.toggleMenu({ open: true, section: "tab-toc", id: "reader-menu-tab-toc", focus: true });
 
         setTimeout(() => {
             const anchor = document.getElementById("headingFocus");
             if (anchor) {
                 anchor.focus();
+            } else {
+                console.error("headingFocus not found !!!!!!");
             }
         }, 1);
     }
 
     private showSearchResults() {
-        this.handleMenuButtonClick(true, "tab-search", true);
+        // this.handleMenuButtonClick(true, "tab-search", true);
+        this.props.toggleMenu({ open: true, section: "tab-search", id: "reader-menu-tab-search", focus: true });
     }
 
-    private handleMenuButtonClick(open?: boolean, openedSectionMenu?: string, doFocus?: boolean, annotationUUID?: string) {
-        console.log("handleMenuButtonClick", "menuOpen=", this.state.menuOpen ? "closeMenu" : "openMenu", open !== undefined ? `openFromParam=${open ? "openMenu" : "closeMenu"}` : "");
+    // private handleMenuButtonClick(open?: boolean, openedSectionMenu?: string, doFocus?: boolean, annotationUUID?: string) {
+    //     console.log("handleMenuButtonClick", "menuOpen=", this.props.menuOpen ? "closeMenu" : "openMenu", open !== undefined ? `openFromParam=${open ? "openMenu" : "closeMenu"}` : "");
 
-        const openToggle = !this.state.menuOpen;
-        const menuOpen = open !== undefined ? open : openToggle;
-        const shortcutEnable = (menuOpen && this.props.readerConfig.readerDockingMode === "full") ? false : true;
+    //     const openToggle = !this.props.menuOpen;
+    //     const menuOpen = open !== undefined ? open : openToggle;
+    //     const shortcutEnable = (menuOpen && this.props.readerConfig.readerDockingMode === "full") ? false : true;
 
-        this.setState({
-            menuOpen: menuOpen,
-            shortcutEnable: shortcutEnable,
-            settingsOpen: false,
-            openedSectionMenu: openedSectionMenu ? openedSectionMenu : this.state.openedSectionMenu,
-            doFocus: doFocus ? this.state.doFocus + 1 : this.state.doFocus,
-            annotationUUID: annotationUUID ? annotationUUID : "",
-        });
+    //     this.setState({
+    //         // menuOpen: menuOpen,
+    //         shortcutEnable: shortcutEnable,
+    //         settingsOpen: false,
+    //         openedSectionMenu: openedSectionMenu ? openedSectionMenu : this.state.openedSectionMenu,
+    //         doFocus: doFocus ? this.state.doFocus + 1 : this.state.doFocus,
+    //         annotationUUID: annotationUUID ? annotationUUID : "",
+    //     });
+
+    //     if (menuOpen) {
+    //         this.props.displayReaderMenu();
+    //     } else {
+    //         this.props.closeReaderMenu();
+    //     }
+    // }
+
+    private saveReadingLocation(miniLocatorExtended: MiniLocatorExtended) {
+        this.props.setMiniLocatorExtended(miniLocatorExtended);
     }
 
-    private saveReadingLocation(loc: LocatorExtended) {
-        this.props.setLocator(loc);
-    }
+    private handleReadingLocationChange(locatorExtended: LocatorExtended) {
 
-    // TODO: WARNING, see code comments alongisde usage of this function for Divina and PDF
-    // (forced type despite different object shape / data model)
-    // See saveReadingLocation() => dispatch(readerLocalActionSetLocator.build(locator))
-    // See Reader RootState reader.locator (readerLocatorReducer merges the action data payload
-    // as-is, without type checking ... but consumers might expect strict LocatorExtended!)
-    private handleReadingLocationChange(loc: LocatorExtended) {
+        ok(locatorExtended, "handleReadingLocationChange loc KO");
 
-        ok(loc, "handleReadingLocationChange loc KO");
+        // if (this.isFixedLayout()) {
+        //     this.setState({ blackoutMask: false });
+        // }
+
+        const miniLocatorExtended = minimizeLocatorExtended(locatorExtended);
 
         if (!this.props.isDivina && !this.props.isPdf && this.ttsOverlayEnableNeedsSync) {
+            ttsHighlightStyle(
+                this.props.readerConfig.ttsHighlightStyle,
+                this.props.readerConfig.ttsHighlightColor,
+                this.props.readerConfig.ttsHighlightStyle_WORD,
+                this.props.readerConfig.ttsHighlightColor_WORD,
+            );
             ttsOverlayEnable(this.props.readerConfig.ttsEnableOverlayMode);
             ttsSentenceDetectionEnable(this.props.readerConfig.ttsEnableSentenceDetection);
+            ttsAndMediaOverlaysManualPlayNext(this.props.readerConfig.ttsAndMediaOverlaysDisableContinuousPlay);
             ttsSkippabilityEnable(this.props.readerConfig.mediaOverlaysEnableSkippability);
         }
         this.ttsOverlayEnableNeedsSync = false;
 
-        // note that with Divina, loc has locator.locations.progression set to totalProgression
-        this.saveReadingLocation(loc);
+        this.saveReadingLocation(miniLocatorExtended);
 
-        const l = (this.props.isDivina || isDivinaLocation(loc)) ? loc : (this.props.isPdf ? loc : (getCurrentReadingLocation() || loc));
+        const l = (this.props.isDivina || isDivinaLocation(locatorExtended)) ? locatorExtended : (this.props.isPdf ? locatorExtended : (getCurrentReadingLocation() || locatorExtended));
         this.setState({ currentLocation: l });
 
-        if (loc?.locator?.href && window.history.length === 1 && !window.history.state) {
+        if (locatorExtended?.locator?.href && window.history.length === 1 && !window.history.state) {
 
             // console.log("#+$%".repeat(5)  + " handleReadingLocationChange (INIT history state) => window history replaceState() ...", JSON.stringify(loc.locator), JSON.stringify(window.history.state), window.history.length, windowHistory._length, JSON.stringify(document.location), JSON.stringify(window.location));
             windowHistory._length = 1;
             // does not trigger onPopState!
-            window.history.replaceState({ data: loc.locator, index: windowHistory._length - 1 }, "");
+            window.history.replaceState({ data: locatorExtended.locator, index: windowHistory._length - 1 }, "");
         }
-
-        // No need to explicitly refresh the bookmarks status here,
-        // as componentDidUpdate() will call the function after setState()!
-        // sets state visibleBookmarkList:
-        // await this.checkBookmupdateVisibleBookmarksarks();
     }
 
-    // check if a bookmark is on the screen
-    private async updateVisibleBookmarks(): Promise<IBookmarkState[] | undefined> {
-        if (!this.props.bookmarks) {
-            this.setState({ visibleBookmarkList: [] });
-            return undefined;
-        }
-
-        const locator = this.state.currentLocation ? this.state.currentLocation.locator : undefined;
-
-        const visibleBookmarkList = [];
-        for (const bookmark of this.props.bookmarks) {
-            // calling into the webview via IPC is expensive,
-            // let's filter out ahead of time based on document href
-            if (!locator || locator.href === bookmark.locator.href) {
-                if (this.props.isDivina || this.props.isPdf) {
-                    const isVisible = bookmark.locator.href === this.props.locator.locator.href;
-                    if (isVisible) {
-                        visibleBookmarkList.push(bookmark);
-                    }
-                } else if (this.props.r2Publication) { // isLocatorVisible() API only once navigator ready
-                    let isVisible = false;
-                    try {
-                        isVisible = await isLocatorVisible(bookmark.locator);
-                    } catch (_e) {
-                        // rejection because webview not fully loaded yet
-                    }
-                    if (isVisible) {
-                        visibleBookmarkList.push(bookmark);
-                    }
-                }
-            }
-        }
-        this.setState({ visibleBookmarkList });
-        return visibleBookmarkList;
-    }
-
-    private focusMainArea() {
+    private focusMainArea(deep: boolean, immediate: boolean) {
         if (this.fastLinkRef?.current) {
             console.log("€€€€€ FOCUS READER MAIN");
             this.fastLinkRef.current.focus();
         }
+
+        setTimeout(() => {
+            keyboardFocusRequest(deep);
+        }, immediate ? 0 : 800); // time for document load + render/paginate + reading location setter
     }
 
     private closeMenu() {
-        
-        if (this.state.menuOpen) {
-            this.handleMenuButtonClick(false);
+
+        if (this.props.menuOpen) {
+            this.props.toggleMenu({ open: false });
         }
     }
 
-    private focusMainAreaLandmarkAndCloseMenu() {
+    private focusMainAreaLandmarkAndCloseMenu(deep: boolean) {
 
-        // if (this.state.menuOpen) {
+        // if (this.props.menuOpen) {
         //     this.handleMenuButtonClick(false);
         // }
 
@@ -2347,19 +2742,36 @@ class Reader extends React.Component<IProps, IState> {
         // }
 
         this.closeMenu();
-        this.focusMainArea();
+        this.focusMainArea(deep, false);
         // if (this.fastLinkRef?.current) {
-        //     // shortcutEnable must be true (see handleMenuButtonClick() above, and this.state.menuOpen))
+        //     // shortcutEnable must be true (see handleMenuButtonClick() above, and this.props.menuOpen))
         //     console.log("@@@@@@@@@@@@@@@");
         //     console.log();
-            
+
         //     console.log("@@@@@@@@@@@@@@@");
-            
+
         //     this.onKeyboardFocusMain();
         // }
     }
 
     private navLeftOrRight_(left: boolean, spineNav?: boolean) {
+
+        if (this.state.accessibilitySupportEnabled) {
+            const isRTL = this.isRTLFlip();
+            const str = isRTL ?
+                (left ? this.props.__("reader.navigation.screenNext") : this.props.__("reader.navigation.screenPrevious")) :
+                (left ? this.props.__("reader.navigation.screenPrevious") : this.props.__("reader.navigation.screenNext"));
+            if (typeof this.screenPreviousNextTimerDebounce !== "undefined") {
+                clearTimeout(this.screenPreviousNextTimerDebounce);
+                this.screenPreviousNextTimerDebounce = undefined;
+            }
+            this.screenPreviousNextTimerDebounce = window.setTimeout(() => {
+                this.screenPreviousNextTimerDebounce = undefined;
+                this.props.toasty(str);
+            }, 800);
+        } else {
+            this.screenPreviousNextTimerDebounce = undefined;
+        }
 
         if (this.props.isPdf) {
             if (left) {
@@ -2400,15 +2812,18 @@ class Reader extends React.Component<IProps, IState> {
 
     private goToLocator(locator: R2Locator, closeNavPanel = true, isFromOnPopState = false) {
 
-        if (closeNavPanel) {
+        if (closeNavPanel && !isFromOnPopState) {
             // this.closeMenu();
-            this.focusMainAreaLandmarkAndCloseMenu();
+            this.focusMainAreaLandmarkAndCloseMenu(true);
         }
 
         if (this.props.isPdf) {
-            const index = locator?.href || "";
-            if (index) {
-                createOrGetPdfEventBus().dispatch("page", index);
+            const pageNumberString = locator?.href || "";
+            if (pageNumberString) {
+                const pageNumber = parseInt(pageNumberString, 10);
+                if (pageNumber) {
+                    createOrGetPdfEventBus().dispatch("pageNumber", pageNumber);
+                }
             }
         } else if (this.props.isDivina) {
             // console.log(JSON.stringify(locator, null, 4));
@@ -2427,6 +2842,7 @@ class Reader extends React.Component<IProps, IState> {
                 this.currentDivinaPlayer.goTo(locator);
             }
         } else {
+
             this.handleLinkLocator(locator, isFromOnPopState);
 
             // this.focusMainArea();
@@ -2434,7 +2850,6 @@ class Reader extends React.Component<IProps, IState> {
 
     }
 
-    // tslint:disable-next-line: max-line-length
     private handleLinkClick(event: TMouseEventOnSpan | TMouseEventOnAnchor | TKeyboardEventOnAnchor | undefined, url: string, closeNavPanel = true, isFromOnPopState = false) {
         if (event) {
             event.preventDefault();
@@ -2443,15 +2858,15 @@ class Reader extends React.Component<IProps, IState> {
             return;
         }
 
-        if (closeNavPanel) {
-            this.focusMainAreaLandmarkAndCloseMenu();
+        if (closeNavPanel && !isFromOnPopState) {
+            this.focusMainAreaLandmarkAndCloseMenu(true);
         }
 
         if (this.props.isPdf) {
 
             const index = url;
             if (index) {
-                createOrGetPdfEventBus().dispatch("page", index);
+                createOrGetPdfEventBus().dispatch("pageLabel", index);
             }
 
         } else if (this.props.isDivina) {
@@ -2462,124 +2877,6 @@ class Reader extends React.Component<IProps, IState> {
         } else {
             const newUrl = isFromOnPopState ? url : this.props.manifestUrlR2Protocol + "/../" + url;
             this.handleLinkUrl(newUrl, isFromOnPopState);
-        }
-    }
-
-    private async handleToggleBookmark(fromKeyboard?: boolean) {
-
-        // this.setState({bookmarkMessage: undefined});
-
-        // sets state visibleBookmarkList
-        const visibleBookmarkList = await this.updateVisibleBookmarks();
-
-        if (this.props.isDivina || this.props.isPdf) {
-
-            const locator = this.props.locator?.locator;
-            // TODO?? const locator = this.state.currentLocation?.locator;
-
-            const href = locator?.href;
-            const name = this.props.isDivina ? locator.href : (parseInt(href, 10) + 1).toString();
-            if (href) {
-
-                const found = visibleBookmarkList.find(({ locator: { href: _href } }) => href === _href);
-                if (found) {
-                    this.props.deleteBookmark(found);
-                } else {
-                    this.props.addBookmark({
-                        locator,
-                        name,
-                    });
-                }
-            }
-
-        } else {
-
-            const locator = this.state.currentLocation?.locator;
-            if (!locator) {
-                return;
-            }
-
-            const deleteAllVisibleBookmarks =
-
-                // "toggle" only if there is a single bookmark in the content visible inside the viewport
-                // otherwise preserve existing, and add new one (see addCurrentLocationToBookmarks below)
-                visibleBookmarkList.length === 1 &&
-
-                // CTRL-B (keyboard interaction) and audiobooks:
-                // do not toggle: never delete, just add current reading location to bookmarks
-                !fromKeyboard &&
-                !this.state.currentLocation.audioPlaybackInfo &&
-                (!locator.text?.highlight ||
-
-                    // "toggle" only if visible bookmark == current reading location
-                    visibleBookmarkList[0].locator.href === locator.href &&
-                    visibleBookmarkList[0].locator.locations.cssSelector === locator.locations.cssSelector &&
-                    visibleBookmarkList[0].locator.text?.highlight === locator.text.highlight
-                )
-                ;
-
-            if (deleteAllVisibleBookmarks) {
-                const l = visibleBookmarkList.length;
-
-                // reader.navigation.bookmarkTitle
-                const msg = `${this.props.__("catalog.delete")} - ${this.props.__("reader.marks.bookmarks")} [${this.props.bookmarks?.length ? this.props.bookmarks.length + 1 - l : 0}]`;
-                // this.setState({bookmarkMessage: msg});
-                this.props.toasty(msg);
-
-                for (const bookmark of visibleBookmarkList) {
-                    this.props.deleteBookmark(bookmark);
-                }
-
-                // we do not add the current reading location to bookmarks
-                // (just toggle the existing visible ones)
-                return;
-            }
-
-            const addCurrentLocationToBookmarks =
-                !this.props.bookmarks?.find((b) => {
-                    const identical =
-                        b.locator.href === locator.href &&
-                        (b.locator.locations.progression === locator.locations.progression ||
-                            b.locator.locations.cssSelector && locator.locations.cssSelector &&
-                            b.locator.locations.cssSelector === locator.locations.cssSelector) &&
-                        b.locator.text?.highlight === locator.text?.highlight;
-
-                    return identical;
-                }) &&
-                (this.state.currentLocation.audioPlaybackInfo ||
-                    !visibleBookmarkList?.length ||
-                    fromKeyboard || // SCREEN READER CTRL+B on discrete text position (container element)
-                    locator.text?.highlight
-                );
-
-            if (addCurrentLocationToBookmarks) {
-
-                let name: string | undefined;
-                if (locator?.text?.highlight) {
-                    name = locator.text.highlight;
-                } else if (this.state.currentLocation.selectionInfo?.cleanText) {
-                    name = this.state.currentLocation.selectionInfo.cleanText;
-                } else if (this.state.currentLocation.audioPlaybackInfo) {
-                    const percent = Math.floor(100 * this.state.currentLocation.audioPlaybackInfo.globalProgression);
-                    // this.state.currentLocation.audioPlaybackInfo.globalTime /
-                    // this.state.currentLocation.audioPlaybackInfo.globalDuration
-                    const timestamp = formatTime(this.state.currentLocation.audioPlaybackInfo.globalTime);
-                    name = `${timestamp} (${percent}%)`;
-                }
-
-                // reader.navigation.bookmarkTitle
-                const msg = `${this.props.__("catalog.addTagsButton")} - ${this.props.__("reader.marks.bookmarks")} [${this.props.bookmarks?.length ? this.props.bookmarks.length + 1 : 1}] ${name ? ` (${name})` : ""}`;
-                // this.setState({bookmarkMessage: msg});
-                this.props.toasty(msg);
-
-                if (locator.locations && !locator.locations.rangeInfo && this.state.currentLocation.selectionInfo?.rangeInfo) {
-                    locator.locations.rangeInfo = this.state.currentLocation.selectionInfo?.rangeInfo;
-                }
-                this.props.addBookmark({
-                    locator,
-                    name,
-                });
-            }
         }
     }
 
@@ -2604,72 +2901,144 @@ class Reader extends React.Component<IProps, IState> {
         this.props.toggleFullscreen(!this.state.fullscreen);
         this.setState({ fullscreen: !this.state.fullscreen });
 
-        if (this.state.menuOpen) {
-            this.handleMenuButtonClick();
-        }
-        if (this.state.settingsOpen) {
-            this.handleSettingsClick();
-        }
+        // if (this.props.menuOpen) {
+            this.props.toggleMenu({open: false});
+        // }
+        // if (this.props.settingsOpen) {
+            this.props.toggleSettings({ open: false });
+        // }
     }
 
-    private handleSettingsClick(open?: boolean, doFocus?: boolean) {
-        console.log("HandleSettingsClick", "settingsOpen=", this.state.settingsOpen ? "closeSettings" : "openSettings", open !== undefined ? `openFromParam=${open ? "openSettings" : "closeSettings"}`: "");
+    // private handleSettingsClick(open?: boolean, doFocus?: boolean) {
+    //     console.log("HandleSettingsClick", "settingsOpen=", this.state.settingsOpen ? "closeSettings" : "openSettings", open !== undefined ? `openFromParam=${open ? "openSettings" : "closeSettings"}`: "");
 
-        const openToggle = !this.state.settingsOpen;
-        const settingsOpen = open !== undefined ? open : openToggle;
-        const shortcutEnable = (settingsOpen && this.props.readerConfig.readerDockingMode === "full") ? false : true;
+    //     const openToggle = !this.state.settingsOpen;
+    //     const settingsOpen = open !== undefined ? open : openToggle;
+    //     const shortcutEnable = (settingsOpen && this.props.readerConfig.readerDockingMode === "full") ? false : true;
 
-        this.setState({
-            settingsOpen,
-            shortcutEnable: shortcutEnable,
-            menuOpen: false,
-            doFocus: doFocus ? this.state.doFocus + 1 : this.state.doFocus,
-            // openedSectionSettings,
-        });
+    //     this.setState({
+    //         settingsOpen,
+    //         shortcutEnable: shortcutEnable,
+    //         // menuOpen: false,
+    //         doFocus: doFocus ? this.state.doFocus + 1 : this.state.doFocus,
+    //         // openedSectionSettings,
+    //     });
+    // }
+    private hideAnnotationsForTTSorMOPlay() {
+        if (this.props.readerConfig.annotation_defaultDrawView !== "hide") { // "margin" or "annotation"
+            this.setState({ previousReaderConfigAnnotationDefaultDrawView: this.props.readerConfig.annotation_defaultDrawView });
+            const href1 = this.state.currentLocation?.locator?.href;
+            const href2 = this.state.currentLocation?.secondWebViewHref;
+            this.props.dispatchMarginAnnotations("hide", href1, href2); // see marginAnnotationsOnChange() in ReaderMenu.tsx
+        }
     }
-
     private handleTTSPlay() {
         ttsClickEnable(true);
-        ttsPlay(parseFloat(this.props.ttsPlaybackRate), this.props.ttsVoice);
+        let delay = 0;
+        if (!this.props.readerConfig?.noFootnotes) {
+            delay = 100;
+            // console.log("TTS PLAY ==> NO_FOOTNOTES MUST BE TRUE (POPUP DISABLED), SWITCHING...");
+            this.props.setConfig({ noFootnotes: true });
+            // TODO: skippability should be disabled when user explicitly "requests" a skippable item, such as when clicking on a note reference hyperlink, or even on a skippable element itself(?)
+        } else if (this.props.readerConfig.annotation_defaultDrawView !== "hide") { // "margin" or "annotation"
+            delay = 200;
+            this.hideAnnotationsForTTSorMOPlay();
+        }
+
+        setTimeout(() => {
+            ttsPlay(parseFloat(this.props.ttsPlaybackRate), this.props.ttsVoices);
+        }, delay);
     }
     private handleTTSPause() {
         ttsPause();
     }
+    private restoreAnnotationStateAfterTTSorMOStop() {
+        if (this.state.previousReaderConfigAnnotationDefaultDrawView) {
+            if (this.props.readerConfig.annotation_defaultDrawView !== this.state.previousReaderConfigAnnotationDefaultDrawView) {
+                const href1 = this.state.currentLocation?.locator?.href;
+                const href2 = this.state.currentLocation?.secondWebViewHref;
+                this.props.dispatchMarginAnnotations(this.state.previousReaderConfigAnnotationDefaultDrawView, href1, href2); // see marginAnnotationsOnChange() in ReaderMenu.tsx
+            }
+            // this.setState({ previousReaderConfigAnnotationDefaultDrawView: this.props.readerConfig.annotation_defaultDrawView });
+            this.setState({ previousReaderConfigAnnotationDefaultDrawView: undefined });
+        }
+    }
     private handleTTSStop() {
         ttsClickEnable(false);
         ttsStop();
+        this.restoreAnnotationStateAfterTTSorMOStop();
     }
     private handleTTSResume() {
         ttsResume();
     }
-    private handleTTSNext(skipSentences = false) {
-        ttsNext(skipSentences);
+    private handleTTSNext(skipSentences: boolean, escape: boolean) {
+        ttsNext(skipSentences, escape);
     }
-    private handleTTSPrevious(skipSentences = false) {
-        ttsPrevious(skipSentences);
+    private handleTTSPrevious(skipSentences: boolean, escape: boolean) {
+        ttsPrevious(skipSentences, escape);
     }
     private handleTTSPlaybackRate(speed: string) {
         ttsPlaybackRate(parseFloat(speed));
         // this.setState({ ttsPlaybackRate: speed });
-        this.props.setConfig({ ...this.props.readerConfig, ttsPlaybackRate: speed }, this.props.session);
+        this.props.setConfig({ ttsPlaybackRate: speed });
     }
-    private handleTTSVoice(voice: SpeechSynthesisVoice | null) {
+    private handleTTSVoice(voices: SpeechSynthesisVoice[] | SpeechSynthesisVoice | null) {
         // alert(`${voice.name} ${voice.lang} ${voice.default} ${voice.voiceURI} ${voice.localService}`);
-        const v = voice ? {
+        // const ttsVoices = this.props.ttsVoices;
+
+        if (!voices) return ;
+        if (!Array.isArray(voices)) {
+            voices = [voices];
+        }
+
+        const v = voices.map<SpeechSynthesisVoice>((voice) => ({
             default: voice.default,
             lang: voice.lang,
             localService: voice.localService,
             name: voice.name,
             voiceURI: voice.voiceURI,
-        } : null;
-        ttsVoice(v);
-        // this.setState({ ttsVoice: v });
-        this.props.setConfig({ ...this.props.readerConfig, ttsVoice: v }, this.props.session);
+        }));
+
+        // console.log("HANDLE_TTS_VOICE", "PUSH_DEFAULT_TTS_VOICES_TO_NAVIGATOR", v);
+        navigatorTTSVoicesSetter(v);
+        this.props.setConfig({ ttsVoices: v });
     }
 
     private handleMediaOverlaysPlay() {
+        let delay = 0;
+
+        // brutal hack, fine for now (no need to add costly state to React)
+        if (_firstMediaOverlaysPlay) {
+            _firstMediaOverlaysPlay = false;
+            delay = 100;
+            // setTimeout(() => {
+            //     window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
+            // }, 0);
+            // const systemVoices = window.speechSynthesis.getVoices();
+            // console.log("window.speechSynthesis.getVoices()", JSON.stringify(systemVoices.map(v => ({
+            //     name: v.name,
+            //     lang: v.lang,
+            //     voiceURI: v.voiceURI,
+            //     default: v.default,
+            //     localService: v.localService,
+            //     })), null, 4));
+            navigatorTTSVoicesSetter(this.props.ttsVoices);
+        }
+
         mediaOverlaysClickEnable(true);
-        mediaOverlaysPlay(parseFloat(this.props.mediaOverlaysPlaybackRate));
+        if (!this.props.readerConfig?.noFootnotes) {
+            delay = 100;
+            // console.log("MO PLAY ==> NO_FOOTNOTES MUST BE TRUE (POPUP DISABLED), SWITCHING...");
+            this.props.setConfig({ noFootnotes: true });
+            // TODO: skippability should be disabled when user explicitly "requests" a skippable item, such as when clicking on a note reference hyperlink, or even on a skippable element itself(?)
+        } else if (this.props.readerConfig.annotation_defaultDrawView !== "hide") { // "margin" or "annotation"
+            delay = 200;
+            this.hideAnnotationsForTTSorMOPlay();
+        }
+
+        setTimeout(() => {
+            mediaOverlaysPlay(parseFloat(this.props.mediaOverlaysPlaybackRate));
+        }, delay);
     }
     private handleMediaOverlaysPause() {
         mediaOverlaysPause();
@@ -2677,6 +3046,7 @@ class Reader extends React.Component<IProps, IState> {
     private handleMediaOverlaysStop() {
         mediaOverlaysClickEnable(false);
         mediaOverlaysStop();
+        this.restoreAnnotationStateAfterTTSorMOStop();
     }
     private handleMediaOverlaysResume() {
         mediaOverlaysResume();
@@ -2690,7 +3060,7 @@ class Reader extends React.Component<IProps, IState> {
     private handleMediaOverlaysPlaybackRate(speed: string) {
         mediaOverlaysPlaybackRate(parseFloat(speed));
         // this.setState({ mediaOverlaysPlaybackRate: speed });
-        this.props.setConfig({ ...this.props.readerConfig, mediaOverlaysPlaybackRate: speed }, this.props.session);
+        this.props.setConfig({ mediaOverlaysPlaybackRate: speed });
     }
 
     // private handleSettingsSave(readerConfig: ReaderConfig) {
@@ -2701,6 +3071,13 @@ class Reader extends React.Component<IProps, IState> {
 
     //     mediaOverlaysEnableSkippability(readerConfig.mediaOverlaysEnableSkippability);
     //     ttsSentenceDetectionEnable(readerConfig.ttsEnableSentenceDetection);
+    // ttsHighlightStyle(
+    //     this.props.readerConfig.ttsHighlightStyle,
+    //     this.props.readerConfig.ttsHighlightColor,
+    //     this.props.readerConfig.ttsHighlightStyle_WORD,
+    //     this.props.readerConfig.ttsHighlightColor_WORD,
+    // );
+    //     ttsAndMediaOverlaysManualPlayNext(readerConfig.ttsAndMediaOverlaysDisableContinuousPlay);
     //     ttsSkippabilityEnable(readerConfig.mediaOverlaysEnableSkippability);
     //     mediaOverlaysEnableCaptionsMode(readerConfig.mediaOverlaysEnableCaptionsMode);
     //     ttsOverlayEnable(readerConfig.ttsEnableOverlayMode);
@@ -2714,11 +3091,11 @@ class Reader extends React.Component<IProps, IState> {
     //     if (ttsWasPlaying) {
     //         ttsStop();
     //         setTimeout(() => {
-    //             ttsPlay(parseFloat(this.state.ttsPlaybackRate), this.state.ttsVoice);
+    //             ttsPlay(parseFloat(this.state.ttsPlaybackRate), this.state.ttsVoices);
     //         }, 300);
     //     }
 
-    //     this.props.setConfig(readerConfig, this.props.session);
+    //     this.props.setConfig(readerConfig);
 
     //     if (this.props.r2Publication) {
     //         readiumCssUpdate(computeReadiumCssJsonMessage(readerConfig));
@@ -2801,25 +3178,6 @@ class Reader extends React.Component<IProps, IState> {
 
 const mapStateToProps = (state: IReaderRootState, _props: IBaseProps) => {
 
-    const indexes: AdjustableSettingsNumber = {
-        fontSize: 2,
-        pageMargins: 0,
-        wordSpacing: 0,
-        letterSpacing: 0,
-        paraSpacing: 0,
-        lineHeight: 0,
-    };
-    for (const key of ObjectKeys(indexes)) {
-        let i = 0;
-        for (const value of optionsValues[key]) {
-            if (state.reader.config[key] === value) {
-                indexes[key] = i;
-                break;
-            }
-            i++;
-        }
-    }
-
     mediaOverlaysEnableSkippability(state.reader.config.mediaOverlaysEnableSkippability);
     mediaOverlaysEnableCaptionsMode(state.reader.config.mediaOverlaysEnableCaptionsMode);
 
@@ -2827,22 +3185,29 @@ const mapStateToProps = (state: IReaderRootState, _props: IBaseProps) => {
     // see this.ttsOverlayEnableNeedsSync
     // ttsOverlayEnable(state.reader.config.ttsEnableOverlayMode);
     // ttsSentenceDetectionEnable(state.reader.config.ttsEnableSentenceDetection);
+    // ttsHighlightStyle(
+    //     this.props.readerConfig.ttsHighlightStyle,
+    //     this.props.readerConfig.ttsHighlightColor,
+    //     this.props.readerConfig.ttsHighlightStyle_WORD,
+    //     this.props.readerConfig.ttsHighlightColor_WORD,
+    // );
+    // ttsAndMediaOverlaysManualPlayNext(state.reader.config.ttsAndMediaOverlaysDisableContinuousPlay);
     // ttsSkippabilityEnable(state.reader.config.mediaOverlaysEnableSkippability);
 
     // extension or @type ?
     // const isDivina = isDivinaFn(state.r2Publication);
-    // const isDivina = path.extname(state?.reader?.info?.filesystemPath) === acceptedExtensionObject.divina;
+    // const isDivina = path.extname(state?.reader?.info?.filesystemPath).toLowerCase() === acceptedExtensionObject.divina;
     const isDivina = isDivinaFn(state.reader.info.r2Publication);
     const isPdf = isPdfFn(state.reader.info.r2Publication);
+    const isAudioBook = isAudiobookFn(state.reader.info.r2Publication);
 
     return {
         isDivina,
         isPdf,
-        lang: state.i18n.locale,
+        isAudioBook,
         publicationView: state.reader.info.publicationView,
         r2Publication: state.reader.info.r2Publication,
         readerConfig: state.reader.config,
-        indexes,
         keyboardShortcuts: state.keyboard.shortcuts,
         infoOpen: state.dialog.open &&
             state.dialog.type === DialogTypeName.PublicationInfoReader,
@@ -2851,19 +3216,22 @@ const mapStateToProps = (state: IReaderRootState, _props: IBaseProps) => {
         searchEnable: state.search.enable,
         manifestUrlR2Protocol: state.reader.info.manifestUrlR2Protocol,
         winId: state.win.identifier,
-        bookmarks: state.reader.bookmark.map(([, v]) => v),
         readerMode: state.mode,
         divinaReadingMode: state.reader.divina.readingMode,
         locale: state.i18n.locale,
-        session: state.session.state,
-
         disableRTLFlip: !!state.reader.disableRTLFlip?.disabled,
         r2PublicationHasMediaOverlays: state.reader.info.navigator.r2PublicationHasMediaOverlays,
         ttsState: state.reader.tts.state,
         mediaOverlaysState: state.reader.mediaOverlay.state,
-        ttsVoice: state.reader.config.ttsVoice,
+        ttsVoices: state.reader.config.ttsVoices,
         mediaOverlaysPlaybackRate: state.reader.config.mediaOverlaysPlaybackRate,
         ttsPlaybackRate: state.reader.config.ttsPlaybackRate,
+        menuOpen: state.dialog.open && state.dialog.type === DialogTypeName.ReaderMenu || state.dock.open && state.dock.type === DockTypeName.ReaderMenu,
+        settingsOpen: state.dialog.open && state.dialog.type === DialogTypeName.ReaderSettings || state.dock.open && state.dock.type === DockTypeName.ReaderSettings,
+
+        // Reader Lock Demo
+        // lock: state.reader.lock,
+        // Reader Lock Demo
     };
 };
 
@@ -2871,9 +3239,18 @@ let __READING_FINISHED_CALL_COUNTER = 0;
 
 const mapDispatchToProps = (dispatch: TDispatch, _props: IBaseProps) => {
     return {
-        toasty: (msg: string) => {
+        dispatchMarginAnnotations: (t: TDrawView, href1: string | undefined, href2: string | undefined) => {
+            dispatch(readerLocalActionSetConfig.build({ annotation_defaultDrawView: t }));
 
+            if (!!href1) {
+                dispatch(readerLocalActionLocatorHrefChanged.build(href1, href1, href2, href2));
+            }
+        },
+        toasty: (msg: string) => {
             dispatch(toastActions.openRequest.build(ToastType.Success, msg));
+        },
+        toastError: (msg: string) => {
+            dispatch(toastActions.openRequest.build(ToastType.Error, msg));
         },
         toggleFullscreen: (fullscreenOn: boolean) => {
             dispatch(readerActions.fullScreenRequest.build(fullscreenOn));
@@ -2885,7 +3262,7 @@ const mapDispatchToProps = (dispatch: TDispatch, _props: IBaseProps) => {
             dispatch(readerActions.detachModeRequest.build());
         },
 
-        displayPublicationInfo: (pubId: string, pdfPlayerNumberOfPages: number | undefined, divinaNumberOfPages: number | undefined, divinaContinousEqualTrue: boolean, readerReadingLocation: LocatorExtended | undefined, handleLinkUrl: ((url: string) => void) | undefined, focusWhereAmI?: boolean) => {
+        displayPublicationInfo: (pubId: string, pdfPlayerNumberOfPages: number | undefined, divinaNumberOfPages: number | undefined, divinaContinousEqualTrue: boolean, readerReadingLocation: MiniLocatorExtended | undefined, handleLinkUrl: ((url: string) => void) | undefined, focusWhereAmI?: boolean) => {
             dispatch(dialogActions.openRequest.build(DialogTypeName.PublicationInfoReader,
                 {
                     publicationIdentifier: pubId,
@@ -2901,21 +3278,21 @@ const mapDispatchToProps = (dispatch: TDispatch, _props: IBaseProps) => {
         closePublicationInfo: () => {
             dispatch(dialogActions.closeRequest.build());
         },
-        setLocator: (locator: LocatorExtended) => {
-            dispatch(readerLocalActionSetLocator.build(locator));
+        setMiniLocatorExtended: (miniLocatorExtended: MiniLocatorExtended) => {
+            dispatch(readerLocalActionSetLocator.build(miniLocatorExtended));
 
             // just to refresh allPublicationPage.tsx
 
             // TODO: quick fix to refresh AllPublication component grid view
             // when a book is set as finished and then open / readed
-            // 
+            //
             // dispatch a stub api endpoint "readingFinishedRefresh" just to trigger
             // AllPublication grid view, this is a legacy usage of the ReduxApi
             // originaly developped. Now we should use the react/redux data update mechanism
             // instead to call a fake IPC API
             //
             // So call readingFinishedRefresh API at each call of setLocator function
-            // trigger too often the refresh, needed only at start or when the book is 
+            // trigger too often the refresh, needed only at start or when the book is
             // check as set as finished in library/AllPublication compoment during the reading
             // setLocator is heavealy called with tts enabled or in an audiobook
             // so we just called readingFinishedRefresh 2 times at start
@@ -2928,18 +3305,14 @@ const mapDispatchToProps = (dispatch: TDispatch, _props: IBaseProps) => {
                 apiDispatch(dispatch)()("publication/readingFinishedRefresh")();
             }
         },
-        setConfig: (config: ReaderConfig, sessionEnabled: boolean) => {
+        setConfig: (config: Partial<ReaderConfig>) => {
             dispatch(readerLocalActionSetConfig.build(config));
 
-            if (!sessionEnabled) {
-                dispatch(readerActions.configSetDefault.build(config));
-            }
-        },
-        addBookmark: (bookmark: IBookmarkStateWithoutUUID) => {
-            dispatch(readerActions.bookmark.push.build(bookmark));
-        },
-        deleteBookmark: (bookmark: IBookmarkState) => {
-            dispatch(readerActions.bookmark.pop.build(bookmark));
+            // session never enabled in reader but always in main/lib
+            // if (!sessionEnabled) {
+                // called once in the readerConfigChanged saga function triggerd by the readerLocalActionSetConfig action just above.
+                // dispatch(readerActions.configSetDefault.build(config));
+            // }
         },
         setDisableRTLFlip: (disable: boolean) => {
             dispatch(readerActions.disableRTLFlip.build(disable));
@@ -2955,8 +3328,14 @@ const mapDispatchToProps = (dispatch: TDispatch, _props: IBaseProps) => {
         dispatchReaderTSXMountedAndPublicationIntoViewportLoaded: () => {
             dispatch(winActions.initSuccess.build());
         },
-        triggerAnnotationBtn: () => {
-            dispatch(readerLocalActionAnnotations.trigger.build());
+        triggerAnnotationBtn: (fromKeyboard: boolean) => {
+            dispatch(readerLocalActionAnnotations.trigger.build(fromKeyboard));
+        },
+        toggleMenu: (data: readerLocalActionToggleMenu.Payload) => {
+            dispatch(readerLocalActionToggleMenu.build(data));
+        },
+        toggleSettings: (data: readerLocalActionToggleSettings.Payload) => {
+            dispatch(readerLocalActionToggleSettings.build(data));
         },
     };
 };

@@ -5,6 +5,9 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+import * as stylesReaderHeader from "readium-desktop/renderer/assets/styles/components/readerHeader.scss";
+import * as stylesButtons from "readium-desktop/renderer/assets/styles/components/buttons.scss";
+
 import * as React from "react";
 import { connect } from "react-redux";
 import { keyboardShortcutsMatch } from "readium-desktop/common/keyboard";
@@ -22,10 +25,9 @@ import { TDispatch } from "readium-desktop/typings/redux";
 
 import { readerLocalActionSearch } from "../../redux/actions";
 import SearchFormPicker from "./SearchFormPicker";
-import * as stylesReaderHeader from "readium-desktop/renderer/assets/styles/components/readerHeader.scss";
+
 
 import { createOrGetPdfEventBus } from "readium-desktop/renderer/reader/pdf/driver";
-import * as stylesButtons from "readium-desktop/renderer/assets/styles/components/buttons.scss";
 
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -37,8 +39,6 @@ interface IBaseProps {
 // RouteComponentProps
 // ReturnType<typeof mapStateToProps>
 // ReturnType<typeof mapDispatchToProps>
-// tslint:disable: no-empty-interface
-// tslint:disable: max-line-length
 interface IProps extends IBaseProps,
     ReturnType<typeof mapStateToProps>,
     ReturnType<typeof mapDispatchToProps>,
@@ -229,10 +229,10 @@ const mapStateToProps = (state: IReaderRootState, _props: IBaseProps) => {
 
     return {
         keyboardShortcuts: state.keyboard.shortcuts,
-        picker: state.picker,
         load: state.search.state === "busy",
         notFound: !state.search.foundArray?.length,
         foundNumber: state.search.foundArray?.length || 0,
+        locale: state.i18n.locale, // refresh
     };
 };
 

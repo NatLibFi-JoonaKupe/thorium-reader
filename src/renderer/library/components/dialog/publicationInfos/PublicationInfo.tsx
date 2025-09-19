@@ -5,7 +5,12 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
+
+import * as stylesModals from "readium-desktop/renderer/assets/styles/components/modals.scss";
+import * as stylesButtons from "readium-desktop/renderer/assets/styles/components/buttons.scss";
+
 import * as Dialog from "@radix-ui/react-dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import * as React from "react";
 import { DialogType, DialogTypeName } from "readium-desktop/common/models/dialog";
 import * as dialogActions from "readium-desktop/common/redux/actions/dialog";
@@ -27,11 +32,11 @@ import * as QuitIcon from "readium-desktop/renderer/assets/icons/close-icon.svg"
 import SVG from "readium-desktop/renderer/common/components/SVG";
 import { useSelector } from "readium-desktop/renderer/common/hooks/useSelector";
 import { useDispatch } from "readium-desktop/renderer/common/hooks/useDispatch";
-import * as stylesModals from "readium-desktop/renderer/assets/styles/components/modals.scss";
 import { TPublication } from "readium-desktop/common/type/publication.type";
 import Loader from "readium-desktop/renderer/common/components/Loader";
 import { useLocation } from "react-router";
-import * as stylesButtons from "readium-desktop/renderer/assets/styles/components/buttons.scss";
+import { convertMultiLangStringToString } from "readium-desktop/common/language-string";
+import { IRendererCommonRootState } from "readium-desktop/common/redux/states/rendererCommonRootState";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface IProps {
@@ -87,7 +92,10 @@ export const PublicationInfoLibWithRadixContent = React.forwardRef<HTMLDivElemen
             <Dialog.Portal>
                 {/* <Dialog.Overlay className="DialogOverlay" /> */}
                 <div className={stylesModals.modal_dialog_overlay}></div>
-                <Dialog.Content className={stylesModals.modal_dialog} {...props} ref={forwardRef}>
+                <Dialog.Content className={stylesModals.modal_dialog} {...props} ref={forwardRef} aria-describedby={undefined}>
+                    <VisuallyHidden.Root>
+                        <Dialog.Title>{__("catalog.bookInfo")}</Dialog.Title>
+                    </VisuallyHidden.Root>
                     <div className={stylesModals.modal_dialog_header}>
                         {/* <Dialog.Title className="DialogTitle">{__("catalog.bookInfo")}</Dialog.Title> */}
                         <h1>{__("catalog.bookInfo")}</h1>
@@ -113,13 +121,17 @@ export const PublicationInfoLibWithRadixContent = React.forwardRef<HTMLDivElemen
 );
 PublicationInfoLibWithRadixContent.displayName = "PublicationInfoLibWithRadixContent";
 
-const PublicationInfoOpdsContext = React.createContext<IOpdsPublicationView | undefined>(undefined);
+const PublicationInfoOpdsContext = React.createContext<DialogType[DialogTypeName.PublicationInfoOpds] | undefined>(undefined);
 export const PublicationInfoOpdsWithRadix: React.FC<React.PropsWithChildren<{opdsPublicationView: IOpdsPublicationView}>> = (props) => {
     const defaultOpen = false;
 
     const dispatch = useDispatch();
     const [open, setOpen] = React.useState(defaultOpen);
     const openFromState = useSelector((state: ILibraryRootState) => state.dialog.open);
+    const data = useSelector((state: ILibraryRootState) =>
+        state.dialog.type === DialogTypeName.PublicationInfoOpds
+            ? state.dialog.data as DialogType[DialogTypeName.PublicationInfoOpds]
+            : undefined);
     React.useMemo(() => {
         if (!openFromState) {
             setOpen(false);
@@ -142,7 +154,7 @@ export const PublicationInfoOpdsWithRadix: React.FC<React.PropsWithChildren<{opd
                     }
                 }}
         >
-            <PublicationInfoOpdsContext.Provider value={props.opdsPublicationView}>
+            <PublicationInfoOpdsContext.Provider value={data}>
                 {props.children}
             </PublicationInfoOpdsContext.Provider>
         </Dialog.Root>
@@ -158,7 +170,10 @@ export const PublicationInfoOpdsWithRadixContent = React.forwardRef<HTMLDivEleme
             <Dialog.Portal>
                 {/* <Dialog.Overlay className="DialogOverlay" /> */}
                 <div className={stylesModals.modal_dialog_overlay}></div>
-                <Dialog.Content className={stylesModals.modal_dialog} {...props} ref={forwardRef}>
+                <Dialog.Content className={stylesModals.modal_dialog} {...props} ref={forwardRef} aria-describedby={undefined}>
+                    <VisuallyHidden.Root>
+                        <Dialog.Title>{__("catalog.bookInfo")}</Dialog.Title>
+                    </VisuallyHidden.Root>
                     <div className={stylesModals.modal_dialog_header}>
                         {/* <Dialog.Title className="DialogTitle">{__("catalog.bookInfo")}</Dialog.Title> */}
                         <h2>{__("catalog.bookInfo")}</h2>
@@ -171,8 +186,8 @@ export const PublicationInfoOpdsWithRadixContent = React.forwardRef<HTMLDivEleme
                     <div className={stylesModals.modal_dialog_body}>
                         <PublicationInfoOpdsContext.Consumer>
                             {
-                                (opdsPublicationView) =>
-                                    <PublicationInfoWithRadixContent publicationViewMaybeOpds={opdsPublicationView} closeDialog={() => dispatch(dialogActions.closeRequest.build())} isOpds={true}
+                                (pub) =>
+                                    <PublicationInfoWithRadixContent publicationViewMaybeOpds={pub?.publication} closeDialog={() => dispatch(dialogActions.closeRequest.build())} isOpds={true}
                                      />
                             }
                         </PublicationInfoOpdsContext.Consumer>
@@ -185,7 +200,8 @@ export const PublicationInfoOpdsWithRadixContent = React.forwardRef<HTMLDivEleme
 PublicationInfoOpdsWithRadixContent.displayName = "PublicationInfoOpdsWithRadixContent";
 
 const PublicationInfoWithRadixContent = (props: {publicationViewMaybeOpds: TPublication | undefined, closeDialog: () => void, isOpds?: boolean}) => {
-    const [, translator] = useTranslator(); // FIXME in reader.tsx
+
+    const locale = useSelector((state: IRendererCommonRootState) => state.i18n.locale);
     const dispatch = useDispatch();
     const link = dispatchOpdsLink(dispatch);
     const location = useLocation();
@@ -216,10 +232,8 @@ const PublicationInfoWithRadixContent = (props: {publicationViewMaybeOpds: TPubl
             ControlComponent={controlsComponent}
             TagManagerComponent={TagManager}
             // coverZoom={coverZoom}
-            translator={translator}
             onClikLinkCb={
-                (_link) => () => link(
-                        _link.link[0], location, _link.name)
+                (_link) => () => link(_link.link[0], location, convertMultiLangStringToString(_link.nameLangString, locale))
             }
             focusWhereAmI={false}
             pdfPlayerNumberOfPages={undefined}

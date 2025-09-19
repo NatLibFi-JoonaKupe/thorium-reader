@@ -6,7 +6,6 @@
         "leftSlideButton": "Povuci popis ulijevo",
         "mainContent": "glavni sadržaj",
         "rightSlideButton": "Povuci popis udesno",
-        "searchBook": "Pretraži po naslovu",
         "skipLink": "Preskoči do sadržaja",
         "toolbar": "alatna traka"
     },
@@ -21,6 +20,7 @@
             "copy": "Kopiraj",
             "cut": "Izreži",
             "paste": "Zalijepi",
+            "print": "",
             "redo": "Ponovi",
             "selectAll": "Označi sve",
             "title": "Uredi",
@@ -35,6 +35,7 @@
                         "no": "Ne",
                         "yes": "Da"
                     },
+                    "help": "",
                     "message": "Želite li spremiti sesiju ?",
                     "title": "Spremi sesiju"
                 }
@@ -69,13 +70,12 @@
         "emptyTagList": "Nemate označenu e-knjigu.",
         "entry": {
             "continueReading": "Nastavi čitati",
-            "continueReadingAudioBooks": "Nastavi slušati",
-            "continueReadingDivina": "Nastavi s divina formatom",
-            "continueReadingPdf": "Nastavi čitati PDF",
             "lastAdditions": "Nedavno dodano"
         },
         "export": "Izvezi",
+        "exportAnnotation": "",
         "format": "Formatiraj",
+        "importAnnotation": "",
         "lang": "Jezik",
         "lastRead": "Zadnje čitano",
         "moreInfo": "Detalji građe",
@@ -117,14 +117,30 @@
         "released": "Datum izdavanja",
         "sort": "Sortiraj po",
         "tag": "",
-        "tagCount": "Broj oznaka",
         "tags": "Oznake",
         "update": "Uredi"
     },
     "dialog": {
+        "annotations": {
+            "descAuthor": "",
+            "descCreator": "",
+            "descList": "",
+            "descNewer": "",
+            "descOlder": "",
+            "descTitle": "",
+            "importAll": "",
+            "importWithoutConflict": "",
+            "origin": "",
+            "title": ""
+        },
         "cancel": "Poništi",
+        "deleteAnnotations": "",
+        "deleteAnnotationsText": "",
+        "deleteBookmarks": "",
+        "deleteBookmarksText": "",
         "deleteFeed": "Želiš li stvarno izbrisati ovaj katalog ?",
         "deletePublication": "Želiš li stvarno izbrisati ovu građu ?",
+        "deletePublicationWithNotes": "",
         "import": "Želiš li stvarno uvesti ove dokumente:",
         "importError": "došlo je do pogreške, provjeri ekstenziju dokumenta ({{acceptedExtension}})",
         "renew": "Želiš li ponovno posuditi ovu građu?",
@@ -157,16 +173,25 @@
     },
     "library": {
         "lcp": {
-            "hint": "(Podsjetnik: {{- hint}})",
-            "password": "Lozinka",
-            "sentence": "Ova građa treba LCP lozinku za otvaranje: ",
-            "urlHint": "Zaboravljena lozinka? Pomoć",
+            "hint": "Podsjetnik: ",
+            "open": "",
+            "password": "Zaporka",
+            "sentence": "Ova građa treba LCP zaporku za otvaranje:",
+            "urlHint": "Zaboravljena zaporka? Pomoć",
             "whatIsLcp?": "",
             "whatIsLcpInfoDetails": "",
             "whatIsLcpInfoDetailsLink": ""
         }
     },
     "message": {
+        "annotations": {
+            "alreadyImported": "",
+            "emptyFile": "",
+            "errorParsing": "",
+            "noBelongTo": "",
+            "nothing": "",
+            "success": ""
+        },
         "download": {
             "error": "Preuzimanje {{- title}} nije uspjelo: [{{- err}}]"
         },
@@ -223,6 +248,297 @@
         },
         "whatIsOpds": ""
     },
+    "publ-a11y-display-guide": {
+        "accessibility-summary": {
+            "accessibility-summary-title": ""
+        },
+        "additional-accessibility-information": {
+            "additional-accessibility-information-aria": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-audio-descriptions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-braille": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-full-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-foreground-and-background-audio": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-high-contrast-between-text-and-background": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-large-print": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-page-breaks": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-ruby-annotations": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-sign-language": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-graphics": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-tactile-objects": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-text-to-speech-hinting": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "additional-accessibility-information-title": ""
+        },
+        "conformance": {
+            "conformance-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-certifier": {
+                "compact": ""
+            },
+            "conformance-certifier-credentials": {
+                "compact": ""
+            },
+            "conformance-details-certifier-report": {
+                "compact": ""
+            },
+            "conformance-details-claim": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-0": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-epub-accessibility-1-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-a": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-level-aaa": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-0": {
+                "compact": ""
+            },
+            "conformance-details-wcag-2-1": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-details-wcag-2-2": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-no": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "conformance-title": "",
+            "conformance-unknown-standard": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "hazards": {
+            "hazards-flashing": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-flashing-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-motion-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-sound-unknown": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "hazards-title": "",
+            "hazards-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "navigation": {
+            "navigation-index": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-page-navigation": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-structural": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "navigation-title": "",
+            "navigation-toc": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "rich-content": {
+            "rich-content-accessible-chemistry-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-chemistry-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-latex": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-as-mathml": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-accessible-math-described": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-closed-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-extended": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-open-captions": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-title": "",
+            "rich-content-transcript": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "rich-content-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        },
+        "ways-of-reading": {
+            "ways-of-reading-nonvisual-reading-alt-text": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-none": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-not-fully": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-nonvisual-reading-readable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-complementary": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-no-metadata": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-only": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-prerecorded-audio-synchronized": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-title": "",
+            "ways-of-reading-visual-adjustments-modifiable": {
+                "compact": "",
+                "descriptive": ""
+            },
+            "ways-of-reading-visual-adjustments-unknown": {
+                "compact": "",
+                "descriptive": ""
+            }
+        }
+    },
     "publication": {
         "accessibility": {
             "accessModeSufficient": {
@@ -270,15 +586,17 @@
         "duration": {
             "title": "Trajanje"
         },
+        "encryptedNoLicense": "",
         "expired": "",
         "expiredLcp": "Ova knjiga se ne može čitati jer je LCP licenca istekla.",
+        "incorrectPassphrase": "",
         "lcpEnd": "Kraj",
         "lcpRightsCopy": "Kopirano znakova",
         "lcpRightsPrint": "Ispisano stranica",
         "lcpStart": "Početak",
         "licenceLCP": "",
+        "licenseCertificateDateInvalid": "Datum potpisa licence je netočan ({{- dateTime}})",
         "licenseOutOfDate": "Licenca je istekla",
-        "licenseSignatureDateInvalid": "Datum potpisa licence je netočan",
         "licenseSignatureInvalid": "Potpis licence je netočan",
         "licensed": "",
         "markAsRead": "",
@@ -304,12 +622,44 @@
             "Color": "",
             "addNote": "",
             "advancedMode": "",
+            "annotationsExport": {
+                "description": "",
+                "title": ""
+            },
             "annotationsOptions": "",
+            "date": "",
+            "export": "",
+            "filter": {
+                "all": "",
+                "filterByColor": "",
+                "filterByCreator": "",
+                "filterByDrawtype": "",
+                "filterByTag": "",
+                "filterOptions": "",
+                "none": ""
+            },
+            "hide": "",
             "highlight": "",
             "noSelectionToast": "",
+            "note": "",
             "quickAnnotations": "",
             "saveNote": "",
-            "toggleMarginMarks": ""
+            "sorting": {
+                "lastcreated": "",
+                "lastmodified": "",
+                "progression": "",
+                "sortingOptions": ""
+            },
+            "toggleMarginMarks": "",
+            "type": {
+                "outline": "",
+                "solid": "",
+                "strikethrough": "",
+                "underline": ""
+            }
+        },
+        "bookmarks": {
+            "index": ""
         },
         "divina": {
             "mute": "isključi zvuk",
@@ -317,6 +667,13 @@
         },
         "fxl": {
             "fit": ""
+        },
+        "goToContent": "",
+        "imgViewer": {
+            "title": "",
+            "zoomIn": "",
+            "zoomOut": "",
+            "zoomReset": ""
         },
         "marks": {
             "annotations": "Anotacije",
@@ -334,6 +691,10 @@
             "activate": "Aktiviraj čitanje naglas",
             "captions": "Naslovi poglavlja / čisti prikaz",
             "captionsDescription": "",
+            "disableContinuousPlay": "",
+            "disableContinuousPlayDescription": "",
+            "ignoreAndUseTTS": "",
+            "ignoreAndUseTTSDescription": "",
             "next": "Čitaj naglas sljedeće",
             "pause": "Pauziraj čitanje naglas",
             "play": "Započni čitanje naglas",
@@ -345,17 +706,19 @@
             "title": "Čitanje naglas"
         },
         "navigation": {
+            "ZenModeExit": "",
+            "ZenModeTitle": "",
             "annotationTitle": "",
             "backHomeTitle": "natrag na policu s knjigama",
             "bookmarkTitle": "knjižna oznaka",
             "currentPage": "Trenutna stranica: {{- current}}",
             "currentPageTotal": "Trenutna stranica: {{- current}}/{{- total}}",
             "detachWindowTitle": "prikaži knjižnicu / policu knjiga",
-            "fullscreenTitle": "uključi prikaz preko cijelog zaslona",
             "goTo": "Idi",
             "goToError": "Ovaj prijelom stranice ne postoji",
             "goToPlaceHolder": "Unesi broj stranice",
             "goToTitle": "Idi na stranicu",
+            "history": "",
             "historyNext": "Idi naprijed",
             "historyPrevious": "Idi natrag",
             "infoTitle": "informacije",
@@ -363,7 +726,21 @@
             "openTableOfContentsTitle": "navigacija",
             "page": "",
             "pdfscalemode": "Širina stranice",
+            "print": "",
+            "printDisabled": "",
+            "screenNext": "",
+            "screenPrevious": "",
             "settingsTitle": "postavke"
+        },
+        "notes": {
+            "colors": {
+                "cyan": "",
+                "green": "",
+                "orange": "",
+                "purple": "",
+                "red": "",
+                "yellow": ""
+            }
         },
         "picker": {
             "search": {
@@ -377,6 +754,24 @@
             },
             "searchTitle": "Pretraga:"
         },
+        "print": {
+            "descriptionLcpCount": "",
+            "descriptionLcpPrintable": "",
+            "howTo": "",
+            "lcpInfo": "",
+            "noPagesLcpLimitReached": "",
+            "noPrintablePages": "",
+            "pageHelpInfo": "",
+            "pageHelpInfo1": "",
+            "pageHelpInfo2": "",
+            "pageHelpInfo3": "",
+            "pageHelpInfo4": "",
+            "pages": "",
+            "preview": "",
+            "print": "",
+            "printablePages": "",
+            "title": ""
+        },
         "settings": {
             "column": {
                 "auto": "Automatski",
@@ -384,6 +779,7 @@
                 "title": "Stupci",
                 "two": "2 stupca"
             },
+            "customFontSelected": "",
             "customizeReader": "",
             "disabled": "",
             "display": "Prikaz",
@@ -398,9 +794,11 @@
             "letterSpacing": "Razmak između slova",
             "lineSpacing": "Razmak između redova",
             "margin": "Margina",
+            "mathjax": "",
             "noFootnotes": "Isključi fusnote",
             "noRTLFlip": "",
             "noRuby": "",
+            "noTemporaryNavTargetOutline": "",
             "paginated": "Paginirano",
             "paraSpacing": "Razmak između paragrafa",
             "pdfZoom": {
@@ -415,6 +813,16 @@
                     "width": "širina stranice"
                 },
                 "title": "Uvećanje"
+            },
+            "preset": {
+                "apply": "",
+                "applyDetails": "",
+                "detail": "",
+                "reset": "",
+                "resetDetails": "",
+                "save": "",
+                "saveDetails": "",
+                "title": ""
             },
             "preview": "",
             "reduceMotion": "Smanji kretanje",
@@ -445,8 +853,9 @@
         },
         "tts": {
             "activate": "Uključi Čitanje naglas",
-            "default": "Glas: zadano",
+            "language": "",
             "next": "Sljedeće Čitanje naglas",
+            "options": "",
             "pause": "Pauziraj Čitanje naglas",
             "play": "Pokreni Čitanje naglas",
             "previous": "Prethodno Čitanje naglas",
@@ -458,7 +867,17 @@
         }
     },
     "settings": {
+        "annotationCreator": {
+            "creator": "",
+            "help": "",
+            "name": "",
+            "organization": "",
+            "person": "",
+            "type": ""
+        },
         "auth": {
+            "help": "",
+            "title": "",
             "wipeData": "Izbriši podatke za prijavu"
         },
         "keyboard": {
@@ -467,17 +886,250 @@
             "disclaimer": "",
             "editUserJson": "Uredi dokument korisnika...",
             "keyboardShortcuts": "Prečaci na tipkovnici",
+            "list": {
+                "AddBookmarkWithLabel": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreate": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsCreateQuick": {
+                    "description": "",
+                    "name": ""
+                },
+                "AnnotationsToggleMargin": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPlayPause": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "AudioStop": {
+                    "description": "",
+                    "name": ""
+                },
+                "CloseReader": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomIn": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomOut": {
+                    "description": "",
+                    "name": ""
+                },
+                "FXLZoomReset": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMain": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusMainDeep": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderGotoPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigation": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationAnnotations": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationBookmarks": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderNavigationTOC": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusReaderSettings": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusSearch": {
+                    "description": "",
+                    "name": ""
+                },
+                "FocusToolbar": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateNextPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapter": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousChapterAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousHistory": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousLibraryPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousOPDSPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPage": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigatePreviousPageAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToBegin": {
+                    "description": "",
+                    "name": ""
+                },
+                "NavigateToEnd": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfo": {
+                    "description": "",
+                    "name": ""
+                },
+                "OpenReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "Print": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNext": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchNextAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPrevious": {
+                    "description": "",
+                    "name": ""
+                },
+                "SearchPreviousAlt": {
+                    "description": "",
+                    "name": ""
+                },
+                "SpeakReaderInfoWhereAmI": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleBookmark": {
+                    "description": "",
+                    "name": ""
+                },
+                "ToggleReaderFullscreen": {
+                    "description": "",
+                    "name": ""
+                }
+            },
             "loadUserJson": "Učitaj iz dokumenta korisnika",
+            "noShortcutFound": "",
             "resetDefaults": "Vrati (učitaj zadano)",
-            "save": "Spremi"
+            "save": "Spremi",
+            "searchPlaceholder": ""
         },
         "language": {
             "languageChoice": "Izbor jezika"
         },
+        "library": {
+            "enableAPIAPP": "",
+            "title": ""
+        },
+        "note": {
+            "export": {
+                "applyDefaultTemplate": "",
+                "enableCheckbox": "",
+                "overrideHTMLTemplate": ""
+            }
+        },
         "session": {
-            "no": "Onemogući",
-            "title": "Spremi sesiju",
-            "yes": "Omogući"
+            "title": "Spremi sesiju"
         },
         "tabs": {
             "appearance": "",
@@ -490,6 +1142,29 @@
             "description": "",
             "light": "",
             "title": ""
+        }
+    },
+    "tts": {
+        "highlight": {
+            "mainColor": "",
+            "maskBlockWordOutline": "",
+            "maskBlockWordSolidBackground": "",
+            "maskBlockWordUnderline": "",
+            "maskWordOutline": "",
+            "maskWordSolidBackground": "",
+            "maskWordUnderline": "",
+            "outlineWordOutline": "",
+            "outlineWordSolidBackground": "",
+            "outlineWordUnderline": "",
+            "preview": "",
+            "solidBackgroundWordOutline": "",
+            "solidBackgroundWordSolidBackground": "",
+            "solidBackgroundWordUnderline": "",
+            "style": "",
+            "underlineWordOutline": "",
+            "underlineWordSolidBackground": "",
+            "underlineWordUnderline": "",
+            "wordColor": ""
         }
     },
     "wizard": {

@@ -5,12 +5,13 @@
 // that can be found in the LICENSE file exposed on Github (readium) in the project repository.
 // ==LICENSE-END==
 
-import { Translator } from "readium-desktop/common/services/translator";
+import { availableLanguages, translateContentFieldHelper } from "readium-desktop/common/services/translator";
 import { IOpdsContributorView } from "readium-desktop/common/views/opds";
+import { IStringMap } from "@r2-shared-js/models/metadata-multilang";
 
 export const formatContributorToString = (
-    contributors: string[] | IOpdsContributorView[] | undefined,
-    translator: Translator): string => {
+    contributors: (string | IStringMap)[] | IOpdsContributorView[] | undefined,
+    locale: keyof typeof availableLanguages): string => {
 
     let retString = "";
 
@@ -23,9 +24,15 @@ export const formatContributorToString = (
             }
 
             if (typeof newContributor === "string") {
-                retString += translator.translateContentField(newContributor);
+                retString += translateContentFieldHelper(newContributor, locale);
+            } else if (newContributor.nameLangString) {
+                retString += translateContentFieldHelper(newContributor.nameLangString, locale);
             } else {
-                retString += translator.translateContentField(newContributor.name);
+                retString += translateContentFieldHelper(newContributor as IStringMap, locale);
+                // const textLangStr = convertMultiLangStringToLangString(stringMap, locale);
+                // const textLang = textLangStr && textLangStr[0] ? textLangStr[0].toLowerCase() : "";
+                // const textIsRTL = langStringIsRTL(textLang);
+                // const textStr = textLangStr && textLangStr[1] ? textLangStr[1] : "";
             }
         }
     }

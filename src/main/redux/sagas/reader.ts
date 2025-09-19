@@ -10,13 +10,12 @@ import { clipboard, screen } from "electron";
 import * as ramda from "ramda";
 import { ReaderMode } from "readium-desktop/common/models/reader";
 import { Action } from "readium-desktop/common/models/redux";
-import { SenderType } from "readium-desktop/common/models/sync";
+import { ActionWithDestination, ActionWithSender, SenderType } from "readium-desktop/common/models/sync";
 import { ToastType } from "readium-desktop/common/models/toast";
 import { normalizeRectangle } from "readium-desktop/common/rectangle/window";
 import { readerActions, toastActions } from "readium-desktop/common/redux/actions";
 import { takeSpawnEvery } from "readium-desktop/common/redux/sagas/takeSpawnEvery";
 import { takeSpawnLeading } from "readium-desktop/common/redux/sagas/takeSpawnLeading";
-import { IReaderStateReader } from "readium-desktop/common/redux/states/renderer/readerRootState";
 import { diMainGet, getLibraryWindowFromDi, getReaderWindowFromDi } from "readium-desktop/main/di";
 import { error } from "readium-desktop/main/tools/error";
 import { streamerActions, winActions } from "readium-desktop/main/redux/actions";
@@ -28,9 +27,11 @@ import { call as callTyped, select as selectTyped, put as putTyped } from "typed
 import { types } from "util";
 
 import {
-    ERROR_MESSAGE_ON_USERKEYCHECKREQUEST, streamerOpenPublicationAndReturnManifestUrl,
+    ERROR_MESSAGE_ON_USERKEYCHECKREQUEST, ERROR_MESSAGE_ENCRYPTED_NO_LICENSE, streamerOpenPublicationAndReturnManifestUrl,
 } from "./publication/openPublication";
 import { PublicationDocument } from "readium-desktop/main/db/document/publication";
+import { getTranslator } from "readium-desktop/common/services/translator";
+import { IReaderStateReaderPersistence } from "readium-desktop/common/redux/states/renderer/readerRootState";
 
 // Logger
 const filename_ = "readium-desktop:main:saga:reader";
@@ -44,7 +45,8 @@ function* readerFullscreenRequest(action: readerActions.fullScreenRequest.TActio
     if (sender.identifier && sender.type === SenderType.Renderer) {
 
         const readerWin = yield* callTyped(() => getReaderWindowFromDi(sender.identifier));
-        if (readerWin) {
+
+        if (readerWin && !readerWin.isDestroyed() && !readerWin.webContents.isDestroyed()) {
             readerWin.setFullScreen(action.payload.full);
         }
     }
@@ -53,7 +55,7 @@ function* readerFullscreenRequest(action: readerActions.fullScreenRequest.TActio
 function* readerDetachRequest(action: readerActions.detachModeRequest.TAction) {
 
     const libWin = yield* callTyped(() => getLibraryWindowFromDi());
-    if (libWin && !libWin.isDestroyed()) {
+    if (libWin && !libWin.isDestroyed() && !libWin.webContents.isDestroyed()) {
 
         // try-catch to do not trigger an error message when the winbound is not handle by the os
         let libBound: Electron.Rectangle;
@@ -79,8 +81,7 @@ function* readerDetachRequest(action: readerActions.detachModeRequest.TAction) {
     if (readerWinId && action.sender?.type === SenderType.Renderer) {
 
         const readerWin = getReaderWindowFromDi(readerWinId);
-
-        if (readerWin) {
+        if (readerWin && !readerWin.isDestroyed() && !readerWin.webContents.isDestroyed()) {
 
             // this should never occur, but let's do it for certainty
             if (readerWin.isMinimized()) {
@@ -176,10 +177,15 @@ function* readerOpenRequest(action: readerActions.openRequest.TAction) {
 
     } catch (e) {
 
-        if (e.toString() !== ERROR_MESSAGE_ON_USERKEYCHECKREQUEST) {
-
-            const translator = yield* callTyped(
-                () => diMainGet("translator"));
+        const errMsg = e.toString();
+        if (errMsg === ERROR_MESSAGE_ENCRYPTED_NO_LICENSE) {
+            yield put(
+                toastActions.openRequest.build(
+                    ToastType.Error,
+                    getTranslator().translate("message.open.error", { err: getTranslator().translate("publication.encryptedNoLicense") }),
+                ),
+            );
+        } else if (errMsg !== ERROR_MESSAGE_ON_USERKEYCHECKREQUEST) {
 
             if (types.isNativeError(e)) {
                 // disable "Error: "
@@ -189,7 +195,7 @@ function* readerOpenRequest(action: readerActions.openRequest.TAction) {
             yield put(
                 toastActions.openRequest.build(
                     ToastType.Error,
-                    translator.translate("message.open.error", { err: e.toString() }),
+                    getTranslator().translate("message.open.error", { err: errMsg }),
                 ),
             );
         }
@@ -198,20 +204,21 @@ function* readerOpenRequest(action: readerActions.openRequest.TAction) {
 
     if (manifestUrl) {
 
-        const reduxState = yield* selectTyped(
+        const reduxState: Partial<IReaderStateReaderPersistence> = yield* selectTyped(
             (state: RootState) =>
-                state.win.registry.reader[publicationIdentifier]?.reduxState || {} as IReaderStateReader,
+                state.win.registry.reader[publicationIdentifier]?.reduxState || {},
         );
 
-        const sessionIsEnabled = yield* selectTyped(
-            (state: RootState) => state.session.state,
-        );
-        if (!sessionIsEnabled) {
-            const reduxDefaultConfig = yield* selectTyped(
-                (state: RootState) => state.reader.defaultConfig,
-            );
-            reduxState.config = reduxDefaultConfig;
-        }
+        // session always enabled
+        // const sessionIsEnabled = yield* selectTyped(
+        //     (state: RootState) => state.session.state,
+        // );
+        // if (!sessionIsEnabled) {
+        //     const reduxDefaultConfig = yield* selectTyped(
+        //         (state: RootState) => state.reader.defaultConfig,
+        //     );
+        //     reduxState.config = reduxDefaultConfig;
+        // }
 
         const winBound = yield* callTyped(getWinBound, publicationIdentifier);
 
@@ -223,7 +230,10 @@ function* readerOpenRequest(action: readerActions.openRequest.TAction) {
         const mode = yield* selectTyped((state: RootState) => state.mode);
         if (mode === ReaderMode.Attached) {
             try {
-                getLibraryWindowFromDi().hide();
+                const libWin = getLibraryWindowFromDi();
+                if (libWin && !libWin.isDestroyed() && !libWin.webContents.isDestroyed()) {
+                    libWin.hide();
+                }
             } catch (_err) {
                 debug("library can't be loaded from di");
             }
@@ -255,7 +265,7 @@ function* readerCLoseRequestFromIdentifier(action: readerActions.closeRequest.TA
     yield call(readerCloseRequest, action.sender.identifier);
 
     const libWin = yield* callTyped(() => getLibraryWindowFromDi());
-    if (libWin && !libWin.isDestroyed()) {
+    if (libWin && !libWin.isDestroyed() && !libWin.webContents.isDestroyed()) {
 
         const winBound = yield* selectTyped(
             (state: RootState) => state.win.session.library.windowBound,
@@ -306,7 +316,7 @@ function* readerCloseRequest(identifier?: string) {
     }
 
     const readerWindow = getReaderWindowFromDi(identifier);
-    if (readerWindow) {
+    if (readerWindow && !readerWindow.isDestroyed() && !readerWindow.webContents.isDestroyed()) {
         readerWindow.close();
     }
 
@@ -330,10 +340,68 @@ function* readerSetReduxState(action: readerActions.setReduxState.TAction) {
         yield put(winActions.registry.registerReaderPublication.build(
             reader.publicationIdentifier,
             reader.windowBound,
-            reader.reduxState),
-        );
+            reduxState));
     } else {
         debug("!!! Error no reader window found, why ??", winId);
+    }
+}
+
+function* readerPrint(action: readerActions.print.TAction) {
+
+    const { publicationIdentifier, pageRange } = action.payload;
+
+    if ((action as ActionWithDestination).destination) {
+        return ; // action to renderer destination
+    }
+
+    debug("READER PRINT FROM MAIN PROCESS", action.payload);
+
+    const publicationRepository = diMainGet("publication-repository");
+    const translator = getTranslator();
+    const publicationDocument = yield* callTyped(() => publicationRepository.get(
+        publicationIdentifier,
+    ));
+
+    if (!publicationDocument.lcp ||
+        !publicationDocument.lcp.rights ||
+        publicationDocument.lcp.rights.print === null ||
+        typeof publicationDocument.lcp.rights.print === "undefined" ||
+        publicationDocument.lcp.rights.print < 0) {
+
+        const actionToSend = readerActions.print.build(publicationIdentifier, pageRange, (action as unknown as ActionWithSender)?.sender?.identifier);
+        yield* putTyped(actionToSend);
+        return ;
+    }
+
+    const lcpRightsPrints = publicationDocument.lcpRightsPrints || [];
+    const lcpRightsPrintsRemain = publicationDocument.lcp.rights.print - lcpRightsPrints.length;
+    const pagesToPrintSaved = pageRange.filter((page) => lcpRightsPrints.some((pageSaved) => pageSaved === page));
+    const pagesToPrintNotSaved = pageRange.filter((page) => !pagesToPrintSaved.some((pageSaved) => pageSaved === page));
+    const pagesToPrintNotSavedRightTruncated = pagesToPrintNotSaved.slice(0, lcpRightsPrintsRemain);
+    const pagesToPrint: number[] = [...pagesToPrintSaved, ...pagesToPrintNotSavedRightTruncated].sort((a, b) => a-b);
+    const newLcpRightsPrints = [...lcpRightsPrints, ...pagesToPrintNotSavedRightTruncated].sort((a, b) => a-b);
+
+    const newPublicationDocument: PublicationDocument = Object.assign(
+        {},
+        publicationDocument,
+        {
+            lcpRightsPrints: newLcpRightsPrints,
+        },
+    );
+
+    yield* callTyped(() => publicationRepository.save(newPublicationDocument));
+
+    if (pagesToPrint.length) {
+        const actionToSend = readerActions.print.build(publicationIdentifier, pagesToPrint, (action as unknown as ActionWithSender)?.sender?.identifier);
+        yield* putTyped(actionToSend);
+    
+        yield* putTyped(toastActions.openRequest.build(ToastType.Success,
+            `LCP [${translator.translate("app.edit.print")}] [${pagesToPrint}] / ${publicationDocument.lcp.rights.print}`,
+            publicationIdentifier));
+    } else {
+        yield* putTyped(toastActions.openRequest.build(ToastType.Error,
+            `LCP [${translator.translate("app.edit.print")}] ${publicationDocument.lcpRightsPrints.length} / ${publicationDocument.lcp.rights.print}`,
+            publicationIdentifier));
     }
 }
 
@@ -345,7 +413,7 @@ function* readerClipboardCopy(action: readerActions.clipboardCopy.TAction) {
     let textToCopy = clipboardData.txt;
 
     const publicationRepository = diMainGet("publication-repository");
-    const translator = diMainGet("translator");
+    const translator = getTranslator();
     const publicationDocument = yield* callTyped(() => publicationRepository.get(
         publicationIdentifier,
     ));
@@ -425,6 +493,11 @@ export function saga() {
             readerActions.clipboardCopy.ID,
             readerClipboardCopy,
             (e) => error(filename_ + ":readerClipboardCopy", e),
+        ),
+        takeSpawnEvery(
+            readerActions.print.ID,
+            readerPrint,
+            (e) => error(filename_ + ":readerPrint", e),
         ),
     ]);
 }

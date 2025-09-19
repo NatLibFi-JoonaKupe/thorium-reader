@@ -6,6 +6,7 @@
 // ==LICENSE-END==
 
 import { app, powerMonitor, protocol } from "electron";
+import { OPDS_MEDIA_SCHEME } from "readium-desktop/common/streamerProtocol";
 import { channel as channelSaga, eventChannel } from "redux-saga";
 
 export function getWindowAllClosedEventChannel() {
@@ -80,9 +81,14 @@ export function getShutdownEventChannel() {
         (emit) => {
 
             const handler = (e: Electron.Event) => emit(e);
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error TS 2769
             powerMonitor.on("shutdown", handler);
 
             return () => {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error TS 2769
                 powerMonitor.removeListener("shutdown", handler);
             };
         },
@@ -117,8 +123,6 @@ export function getOpdsRequestCustomProtocolEventChannel() {
 
     return channel;
 }
-
-export const OPDS_MEDIA_SCHEME = "opds-media";
 
 // HACK!! TODO: FIXME (Electron lifecycle requires this before app.ready, and called only once!)
 // see src/main/streamer/streamerNoHttp.ts

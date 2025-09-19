@@ -54,15 +54,8 @@ function* unlockPublicationWithPassphrase(action: lcpActions.unlockPublicationWi
 
         debug(unlockPublicationRes, "'undefined' means OKay the publication is decrypted, Well Done !");
         if (typeof unlockPublicationRes !== "undefined") {
-            const message =
-                // unlockPublicationRes === 11 ?
-                // this.translator.translate("publication.expiredLcp") :
-                yield* callTyped(() => lcpManager.convertUnlockPublicationResultToString(unlockPublicationRes));
-            debug(message);
-
             // import { TaJsonDeserialize } from "@r2-lcp-js/serializable";
             // import { Publication as R2Publication } from "@r2-shared-js/models/publication";
-            // tslint:disable-next-line: max-line-length
             // const r2PublicationStr = Buffer.from(publicationView.r2PublicationBase64, "base64").toString("utf-8");
             // const r2PublicationJson = JSON.parse(r2PublicationStr);
             // const r2Publication = TaJsonDeserialize(r2PublicationJson, R2Publication);
@@ -75,6 +68,12 @@ function* unlockPublicationWithPassphrase(action: lcpActions.unlockPublicationWi
                 debug("LCP !!?");
                 return;
             }
+
+            const message =
+                // unlockPublicationRes === 11 ?
+                // this.translator.translate("publication.expiredLcp") :
+                yield* callTyped(() => lcpManager.convertUnlockPublicationResultToString(unlockPublicationRes, publicationView.lcp?.issued || publicationDocument.lcp?.issued || ""));
+            debug(message);
 
             // !r2Publication?.LCP?.Encryption?.UserKey?.TextHint
             if (!publicationView.lcp.textHint) {
